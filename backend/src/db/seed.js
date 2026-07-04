@@ -1,0 +1,162 @@
+import bcrypt from 'bcryptjs';
+import { db } from './index.js';
+
+const userCount = db.prepare('SELECT COUNT(*) AS c FROM users').get().c;
+
+if (userCount === 0) {
+  console.log('Seeding database...');
+
+  const insertUser = db.prepare(`
+    INSERT INTO users (name, email, password_hash, role, points, wins, losses)
+    VALUES (@name, @email, @password_hash, @role, @points, @wins, @losses)
+  `);
+
+  const passwordHash = bcrypt.hashSync('password123', 10);
+  const adminHash = bcrypt.hashSync('admin123', 10);
+
+  const members = [
+    { name: 'Mamad Fifa', email: 'mamad@fifasoul.test', points: 980, wins: 41, losses: 6 },
+    { name: 'Hamid k2', email: 'hamid@fifasoul.test', points: 870, wins: 33, losses: 9 },
+    { name: 'Amin 32', email: 'amin@fifasoul.test', points: 810, wins: 30, losses: 11 },
+    { name: 'Navid game', email: 'navid@fifasoul.test', points: 790, wins: 28, losses: 10 },
+    { name: 'reza toyota', email: 'reza@fifasoul.test', points: 640, wins: 22, losses: 14 },
+  ];
+
+  const memberIds = {};
+  for (const m of members) {
+    const info = insertUser.run({
+      name: m.name,
+      email: m.email,
+      password_hash: passwordHash,
+      role: 'member',
+      points: m.points,
+      wins: m.wins,
+      losses: m.losses,
+    });
+    memberIds[m.name] = info.lastInsertRowid;
+  }
+
+  const adminInfo = insertUser.run({
+    name: 'مدیر سایت',
+    email: 'admin@fifasoul.test',
+    password_hash: adminHash,
+    role: 'admin',
+    points: 0,
+    wins: 0,
+    losses: 0,
+  });
+
+  const insertTournament = db.prepare(`
+    INSERT INTO tournaments (title, type, description, status, entry_fee, max_players, start_date, created_by)
+    VALUES (@title, @type, @description, @status, @entry_fee, @max_players, @start_date, @created_by)
+  `);
+
+  const t1 = insertTournament.run({
+    title: 'لیگ ستارگان FIFA Soul فصل ۳',
+    type: 'league',
+    description: 'رقابت ۱۶ بازیکن برتر در قالب لیگ رفت و برگشت با پخش زنده مسابقات.',
+    status: 'in_progress',
+    entry_fee: 50000,
+    max_players: 16,
+    start_date: '2026-06-01',
+    created_by: adminInfo.lastInsertRowid,
+  });
+
+  const t2 = insertTournament.run({
+    title: 'کاپ حذفی پاییزه',
+    type: 'cup',
+    description: 'مسابقه حذفی تک‌بازی با جوایز نقدی برای نفرات برتر.',
+    status: 'upcoming',
+    entry_fee: 30000,
+    max_players: 32,
+    start_date: '2026-08-15',
+    created_by: adminInfo.lastInsertRowid,
+  });
+
+  const insertMatch = db.prepare(`
+    INSERT INTO matches (tournament_id, home_user_id, away_user_id, home_name, away_name, home_score, away_score, status, category, scheduled_at)
+    VALUES (@tournament_id, @home_user_id, @away_user_id, @home_name, @away_name, @home_score, @away_score, @status, @category, @scheduled_at)
+  `);
+
+  insertMatch.run({
+    tournament_id: t1.lastInsertRowid,
+    home_user_id: memberIds['Mamad Fifa'],
+    away_user_id: memberIds['reza toyota'],
+    home_name: 'Mamad Fifa',
+    away_name: 'reza toyota',
+    home_score: null,
+    away_score: null,
+    status: 'in_progress',
+    category: 'ro_dero',
+    scheduled_at: '2026-07-04 20:00',
+  });
+
+  insertMatch.run({
+    tournament_id: t1.lastInsertRowid,
+    home_user_id: memberIds['Mamad Fifa'],
+    away_user_id: null,
+    home_name: 'Mamad Fifa',
+    away_name: null,
+    home_score: null,
+    away_score: null,
+    status: 'waiting',
+    category: 'play_off',
+    scheduled_at: null,
+  });
+
+  insertMatch.run({
+    tournament_id: t2.lastInsertRowid,
+    home_user_id: memberIds['Hamid k2'],
+    away_user_id: memberIds['Amin 32'],
+    home_name: 'Hamid k2',
+    away_name: 'Amin 32',
+    home_score: 3,
+    away_score: 1,
+    status: 'finished',
+    category: 'ro_dero',
+    scheduled_at: '2026-06-20 18:00',
+  });
+
+  const insertNews = db.prepare(`
+    INSERT INTO news (title, excerpt, body, cover_image, category, author_id)
+    VALUES (@title, @excerpt, @body, @cover_image, @category, @author_id)
+  `);
+
+  const newsItems = [
+    {
+      title: 'شروع فصل جدید لیگ ستارگان',
+      excerpt: 'تیم پرسپولیس متن سادگی با تولید سادگی متن و استفاده از طراحی گرافیک است.',
+      category: 'active_games',
+    },
+    {
+      title: 'برترین گیمرهای هفته معرفی شدند',
+      excerpt: 'صنعت چاپ و با استفاده از طراحی گرافیک، متن‌ها را به‌روزرسانی کرده‌ایم.',
+      category: 'popular',
+    },
+    {
+      title: 'قوانین جدید کاپ حذفی پاییزه',
+      excerpt: 'در این مطلب با آخرین تغییرات قوانین برگزاری مسابقات آشنا شوید.',
+      category: 'newest',
+    },
+    {
+      title: 'آموزش ثبت‌نام و ورود به تورنمنت‌ها',
+      excerpt: 'راهنمای گام‌به‌گام برای شرکت در اولین مسابقه خود در فیفاسول.',
+      category: 'tutorial',
+    },
+  ];
+
+  for (const n of newsItems) {
+    insertNews.run({
+      title: n.title,
+      excerpt: n.excerpt,
+      body: n.excerpt,
+      cover_image: null,
+      category: n.category,
+      author_id: adminInfo.lastInsertRowid,
+    });
+  }
+
+  console.log('Seed complete. Admin login: admin@fifasoul.test / admin123');
+} else {
+  console.log('Database already has data, skipping seed.');
+}
