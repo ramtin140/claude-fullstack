@@ -13,4 +13,11 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    host: '0.0.0.0',
+    port: 4173,
+    allowedHosts: [
+      'daring-freedom-production-90fe.up.railway.app',
+    ],
+  },
 });
