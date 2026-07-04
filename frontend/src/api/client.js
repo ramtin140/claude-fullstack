@@ -1,7 +1,16 @@
 import axios from 'axios';
 
+// In production (two-service deployment) the frontend and backend live on
+// different Railway URLs, so the API base must be absolute — set via
+// VITE_API_URL at build time. Locally, VITE_API_URL is left unset and the
+// relative '/api' path is used unchanged, which Vite's dev-server proxy
+// forwards to the backend (see vite.config.js).
+const baseURL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api`
+  : '/api';
+
 export const api = axios.create({
-  baseURL: '/api',
+  baseURL,
 });
 
 api.interceptors.request.use((config) => {

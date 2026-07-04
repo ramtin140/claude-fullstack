@@ -8,8 +8,7 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "seed": "node src/db/seed.js",
-    "postinstall": "node scripts/build-frontend.js"
+    "seed": "node src/db/seed.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
