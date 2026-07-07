@@ -33,6 +33,17 @@ export default function AdminExpertQueue() {
     }
   }
 
+  async function voidMatch(leg) {
+    if (!confirm('آیا مطمئنید؟ کل مسابقه لغو و مبلغ شرط‌بندی به هر دو طرف بازگردانده می‌شود.')) return;
+    setError(null);
+    try {
+      await api.post(`/h2h/${leg.match_id}/legs/${leg.leg_number}/expert-void`, { reason: scores[leg.id]?.notes });
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'خطا در لغو مسابقه.');
+    }
+  }
+
   return (
     <div>
       <div className="admin-header">
@@ -80,10 +91,13 @@ export default function AdminExpertQueue() {
                 <button className="btn btn-primary" onClick={() => resolve(leg)}>
                   ثبت نتیجه نهایی
                 </button>
+                <button className="btn btn-magenta" onClick={() => voidMatch(leg)}>
+                  لغو مسابقه (نقص فنی)
+                </button>
               </div>
               <textarea
                 rows={2}
-                placeholder="یادداشت کارشناسی (اختیاری) — در تاریخچه بررسی ثبت می‌شود"
+                placeholder="یادداشت کارشناسی (اختیاری) — در تاریخچه بررسی یا دلیل لغو ثبت می‌شود"
                 style={{ width: '100%', marginTop: 10, padding: 8, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
                 onChange={(e) => setScores({ ...scores, [leg.id]: { ...scores[leg.id], notes: e.target.value } })}
               />

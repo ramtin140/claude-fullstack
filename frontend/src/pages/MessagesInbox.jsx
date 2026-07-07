@@ -2,19 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { User, MessageCircle } from 'lucide-react';
 import { api, assetUrl } from '../api/client.js';
+import { timeAgo } from '../utils/datetime.js';
 import '../styles/pages.css';
 import '../styles/messages.css';
-
-function timeAgo(sqliteDatetime) {
-  if (!sqliteDatetime) return '';
-  const ts = new Date(sqliteDatetime.replace(' ', 'T') + 'Z').getTime();
-  const minutes = Math.floor((Date.now() - ts) / 60000);
-  if (minutes < 1) return 'همین الان';
-  if (minutes < 60) return `${minutes} دقیقه پیش`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} ساعت پیش`;
-  return `${Math.floor(hours / 24)} روز پیش`;
-}
 
 export default function MessagesInbox() {
   const [threads, setThreads] = useState([]);

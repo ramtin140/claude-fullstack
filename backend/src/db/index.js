@@ -65,11 +65,14 @@ addColumnsIfMissing('users', [
 
 addColumnsIfMissing('h2h_matches', [
   ['time_limit_hours', 'INTEGER'],
+  ['cancel_reason', 'TEXT'],
 ]);
 
 addColumnsIfMissing('h2h_legs', [
   ['deadline_at', 'TEXT'],
   ['forfeit_dispute_deadline', 'TEXT'],
+  ['technical_issue_reason', 'TEXT'],
+  ['technical_issue_reported_by', 'INTEGER REFERENCES users(id)'],
 ]);
 
 addColumnsIfMissing('tournaments', [

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client.js';
+import { formatDateTime } from '../../utils/datetime.js';
 import '../../styles/admin.css';
 import '../../styles/support.css';
 
@@ -35,7 +36,8 @@ export default function AdminSupport() {
           {tickets.map((t) => (
             <Link key={t.id} to={`/support/${t.id}`} className="card support-ticket-row">
               <span>
-                <strong>{t.subject}</strong> — {t.user_name} ({categoryLabel[t.category]})
+                <span className="ticket-number">#{t.id}</span> <strong>{t.subject}</strong> — {t.user_name} ({categoryLabel[t.category]})
+                <span className="ticket-date"> — {formatDateTime(t.created_at)}</span>
               </span>
               <span className={`badge ${statusBadge[t.status]}`}>{statusLabel[t.status]}</span>
             </Link>

@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { isStaff } from '../components/ProtectedRoute.jsx';
+import { formatDateTime, formatTime } from '../utils/datetime.js';
 import '../styles/pages.css';
 import '../styles/messages.css';
 import '../styles/support.css';
@@ -57,8 +58,12 @@ export default function SupportDetail() {
             <ArrowRight size={16} />
           </Link>
           <div>
-            <div className="thread-name">{ticket.subject}</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{categoryLabel[ticket.category]}</div>
+            <div className="thread-name">
+              <span className="ticket-number">#{ticket.id}</span> {ticket.subject}
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              {categoryLabel[ticket.category]} — {formatDateTime(ticket.created_at)}
+            </div>
           </div>
           <span className={`badge ${statusBadge[ticket.status]}`} style={{ marginRight: 'auto' }}>
             {statusLabel[ticket.status]}
@@ -70,6 +75,7 @@ export default function SupportDetail() {
             <div key={m.id} className={`chat-bubble ${m.is_staff ? 'mine' : 'theirs'}`}>
               <strong style={{ fontSize: '0.75rem', color: 'var(--gold)' }}>{m.is_staff ? `پشتیبانی (${m.sender_name})` : m.sender_name}</strong>
               <span>{m.body}</span>
+              <span className="chat-time">{formatTime(m.created_at)}</span>
             </div>
           ))}
         </div>

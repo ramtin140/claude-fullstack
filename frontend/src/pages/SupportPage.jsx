@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LifeBuoy } from 'lucide-react';
 import { api } from '../api/client.js';
+import { formatDateTime } from '../utils/datetime.js';
 import '../styles/pages.css';
 import '../styles/support.css';
 
@@ -81,7 +82,10 @@ export default function SupportPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {tickets.map((t) => (
               <Link key={t.id} to={`/support/${t.id}`} className="card support-ticket-row">
-                <span>{t.subject}</span>
+                <span>
+                  <span className="ticket-number">#{t.id}</span> {t.subject}
+                  <span className="ticket-date"> — {formatDateTime(t.created_at)}</span>
+                </span>
                 <span className={`badge ${statusBadge[t.status]}`}>{statusLabel[t.status]}</span>
               </Link>
             ))}

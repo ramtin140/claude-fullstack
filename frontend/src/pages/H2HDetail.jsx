@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Trophy, Gavel, User, Clock, AlertTriangle } from 'lucide-react';
+import { Trophy, Gavel, User, Clock, AlertTriangle, Wifi } from 'lucide-react';
 import { api, assetUrl } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { hasStaffAccess } from '../components/ProtectedRoute.jsx';
+import { parseUtc } from '../utils/datetime.js';
 import '../styles/h2h.css';
 import '../styles/pages.css';
 
@@ -14,14 +15,9 @@ const legStatusLabel = {
   expert_review: 'در حال بررسی کارشناسی',
   expert_resolved: 'توسط کارشناس نهایی شد',
   forfeited: 'نتیجه فرجه‌ای (۳-۰)',
+  technical_issue: 'گزارش نقص فنی — در انتظار تایید حریف',
+  cancelled: 'لغوشده (نقص فنی)',
 };
-
-// SQLite's datetime('now') stores UTC as "YYYY-MM-DD HH:MM:SS" with no zone
-// suffix — Date can't parse that reliably across browsers without this.
-function parseUtc(sqliteDatetime) {
-  if (!sqliteDatetime) return null;
-  return new Date(sqliteDatetime.replace(' ', 'T') + 'Z');
-}
 
 function formatRemaining(deadline) {
   const ms = deadline - Date.now();
@@ -80,7 +76,62 @@ function ScoreInputRow({ homeLabel, homeId, awayLabel, awayId, homeValue, onHome
   );
 }
 
-function LegCard({ leg, index, userId, onSubmit, onConfirm, onDispute, onClaimForfeit, onDisputeForfeit }) {
+// Reusable "report a technical problem" link + inline reason form — offered
+// alongside the normal submit/confirm actions, not instead of them, since a
+// ping/disconnect issue can surface either before a result is submitted or
+// while waiting for the other side to confirm it.
+function TechnicalIssueReporter({ onReport }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState(null);
+
+  if (!open) {
+    return (
+      <button type="button" className="btn-link-muted" onClick={() => setOpen(true)}>
+        <Wifi size={13} /> گزارش نقص فنی (پینگ/قطعی و غیره)
+      </button>
+    );
+  }
+
+  return (
+    <form
+      style={{ marginTop: 10 }}
+      onSubmit={(e) => {
+        e.preventDefault();
+        setError(null);
+        onReport(reason).catch((err) => setError(err.response?.data?.error || 'خطا در ثبت گزارش'));
+      }}
+    >
+      <div className="form-field">
+        <label>توضیح نقص فنی</label>
+        <textarea required rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثلاً: پینگ حریف بالا بود و بازی قطع و وصل می‌شد" />
+      </div>
+      {error && <p className="error-text">{error}</p>}
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setOpen(false)}>
+          انصراف
+        </button>
+        <button type="submit" className="btn btn-magenta" style={{ flex: 1 }}>
+          ثبت گزارش
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function LegCard({
+  leg,
+  index,
+  userId,
+  onSubmit,
+  onConfirm,
+  onDispute,
+  onClaimForfeit,
+  onDisputeForfeit,
+  onReportTechnicalIssue,
+  onConfirmTechnicalIssue,
+  onRejectTechnicalIssue,
+}) {
   const [homeScore, setHomeScore] = useState('');
   const [awayScore, setAwayScore] = useState('');
   const [disputeMode, setDisputeMode] = useState(false);
@@ -115,7 +166,39 @@ function LegCard({ leg, index, userId, onSubmit, onConfirm, onDispute, onClaimFo
 
       <LegParticipants leg={leg} />
 
-      {leg.status === 'forfeited' ? (
+      {leg.status === 'technical_issue' ? (
+        <div>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>
+            <Wifi size={13} style={{ verticalAlign: 'middle' }} /> نقص فنی گزارش‌شده: {leg.technical_issue_reason}
+          </p>
+          {isParticipant && leg.technical_issue_reported_by === userId ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>
+              در انتظار تایید حریف برای لغو مسابقه...
+            </p>
+          ) : isParticipant ? (
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                className="btn btn-magenta"
+                style={{ flex: 1 }}
+                onClick={() => onConfirmTechnicalIssue(leg.leg_number).catch((err) => setError(err.response?.data?.error || 'خطا'))}
+              >
+                تایید (لغو مسابقه)
+              </button>
+              <button
+                className="btn btn-outline"
+                style={{ flex: 1 }}
+                onClick={() => onRejectTechnicalIssue(leg.leg_number).catch((err) => setError(err.response?.data?.error || 'خطا'))}
+              >
+                رد کردن (ارجاع به کارشناسی)
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : leg.status === 'cancelled' ? (
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>
+          این نیم‌فصل به دلیل نقص فنی لغو شد.
+        </p>
+      ) : leg.status === 'forfeited' ? (
         <div>
           <div className="leg-score-row">
             <span>{leg.final_home_score}</span>
@@ -226,6 +309,9 @@ function LegCard({ leg, index, userId, onSubmit, onConfirm, onDispute, onClaimFo
               </button>
             </form>
           )}
+          {!deadlinePassed && (
+            <TechnicalIssueReporter onReport={(reason) => onReportTechnicalIssue(leg.leg_number, reason)} />
+          )}
         </div>
       ) : leg.status === 'pending_confirmation' && isParticipant && leg.submitted_by_id !== userId ? (
         <div>
@@ -287,6 +373,9 @@ function LegCard({ leg, index, userId, onSubmit, onConfirm, onDispute, onClaimFo
                 </button>
               </div>
             </form>
+          )}
+          {!disputeMode && (
+            <TechnicalIssueReporter onReport={(reason) => onReportTechnicalIssue(leg.leg_number, reason)} />
           )}
         </div>
       ) : leg.status === 'pending_confirmation' ? (
@@ -404,6 +493,24 @@ export default function H2HDetail() {
     }
   }
 
+  async function reportTechnicalIssue(legNumber, reason) {
+    const { data } = await api.post(`/h2h/${id}/legs/${legNumber}/report-technical-issue`, { reason });
+    load();
+    return data;
+  }
+
+  async function confirmTechnicalIssue(legNumber) {
+    const { data } = await api.post(`/h2h/${id}/legs/${legNumber}/confirm-technical-issue`);
+    load();
+    return data;
+  }
+
+  async function rejectTechnicalIssue(legNumber) {
+    const { data } = await api.post(`/h2h/${id}/legs/${legNumber}/reject-technical-issue`);
+    load();
+    return data;
+  }
+
   if (!match) return <div className="empty-state" style={{ padding: 60 }}>در حال بارگذاری...</div>;
 
   return (
@@ -431,6 +538,13 @@ export default function H2HDetail() {
                 ? 'تبریک! شما برنده این مسابقه شدید.'
                 : 'این مسابقه به پایان رسید.'
               : 'این مسابقه با تساوی به پایان رسید.'}
+          </div>
+        )}
+
+        {match.status === 'cancelled' && (
+          <div className="winner-banner" style={{ borderColor: 'var(--magenta)', color: 'var(--magenta)' }}>
+            <Wifi size={20} style={{ verticalAlign: 'middle', marginLeft: 8 }} />
+            این مسابقه به دلیل نقص فنی لغو شد{match.cancel_reason ? `: ${match.cancel_reason}` : ''} — مبلغ شرط‌بندی بازگردانده شد.
           </div>
         )}
 
@@ -467,6 +581,9 @@ export default function H2HDetail() {
                 onDispute={disputeLeg}
                 onClaimForfeit={claimForfeit}
                 onDisputeForfeit={disputeForfeit}
+                onReportTechnicalIssue={reportTechnicalIssue}
+                onConfirmTechnicalIssue={confirmTechnicalIssue}
+                onRejectTechnicalIssue={rejectTechnicalIssue}
               />
             ))}
           </div>

@@ -9,3 +9,14 @@
 .support-ticket-row:hover {
   border-color: var(--gold);
 }
+
+.ticket-number {
+  font-family: monospace;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.ticket-date {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}

@@ -4,13 +4,9 @@ import { User, Send, ArrowRight } from 'lucide-react';
 import { api, assetUrl } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useRealtime } from '../context/RealtimeContext.jsx';
+import { formatTime } from '../utils/datetime.js';
 import '../styles/pages.css';
 import '../styles/messages.css';
-
-function formatTime(sqliteDatetime) {
-  const d = new Date(sqliteDatetime.replace(' ', 'T') + 'Z');
-  return d.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
-}
 
 export default function MessageThread() {
   const { userId } = useParams();

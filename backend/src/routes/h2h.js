@@ -156,6 +156,34 @@ function tryFinalizeMatch(matchId) {
   }
 }
 
+// No-fault cancellation for genuine technical problems (ping/disconnect) —
+// unlike a normal loss, nobody's win/loss/XP changes; ticket stakes are just
+// refunded. Reached either automatically (both sides agree it was a
+// technical issue) or by an expert overriding a disputed technical-issue
+// report. Safe to call on an already-finished match — it's a no-op then.
+function voidMatch(matchId, reason) {
+  const match = db.prepare('SELECT * FROM h2h_matches WHERE id = ?').get(matchId);
+  if (!match || ['completed', 'cancelled'].includes(match.status)) return;
+
+  if (match.stake_type === 'ticket') {
+    adjustWallet(match.creator_id, 'ticket', match.stake_amount, 'match_refund', 'h2h_match', matchId);
+    adjustWallet(match.opponent_id, 'ticket', match.stake_amount, 'match_refund', 'h2h_match', matchId);
+  }
+
+  db.prepare(`UPDATE h2h_matches SET status = 'cancelled', cancel_reason = ? WHERE id = ?`).run(reason || null, matchId);
+  db.prepare(
+    `UPDATE h2h_legs SET status = 'cancelled' WHERE match_id = ? AND status NOT IN ('confirmed', 'expert_resolved')`
+  ).run(matchId);
+
+  for (const uid of [match.creator_id, match.opponent_id]) {
+    const email = userEmail(uid);
+    if (email) {
+      sendEmailNotification(email, 'مسابقه به دلیل نقص فنی لغو شد', 'مسابقه رو-در-رو شما به دلیل نقص فنی لغو و مبلغ شرط‌بندی بازگردانده شد.');
+    }
+    notifyUser(uid, 'مسابقه به دلیل نقص فنی لغو شد و تیکت‌ها بازگردانده شد.', 'warning', `/h2h/${matchId}`);
+  }
+}
+
 router.get('/', (req, res) => {
   const { status } = req.query;
   const rows = status
@@ -516,6 +544,89 @@ router.post('/:id/legs/:legNumber/dispute-forfeit', requireAuth, (req, res) => {
   });
 });
 
+// Technical issue (پینگ/قطعی و غیره) — distinct from a normal dispute: this
+// is "the match itself couldn't be played fairly," not "the score is wrong."
+// Either participant can raise it before a result is finalized; the other
+// side either agrees (leg + whole match voided, stakes refunded, no
+// win/loss/XP) or disagrees (escalated to the same expert_review queue used
+// for score disputes, where an expert makes the final call).
+router.post('/:id/legs/:legNumber/report-technical-issue', requireAuth, (req, res) => {
+  const leg = getLegOr404(req.params.id, req.params.legNumber, res);
+  if (!leg) return;
+
+  if (![leg.home_user_id, leg.away_user_id].includes(req.user.id)) {
+    return res.status(403).json({ error: 'شما در این مسابقه شرکت ندارید.' });
+  }
+  if (!['pending_submission', 'pending_confirmation'].includes(leg.status)) {
+    return res.status(409).json({ error: 'این نیم‌فصل در وضعیتی نیست که بتوان نقص فنی گزارش کرد.' });
+  }
+
+  const { reason } = req.body;
+  if (!reason || !reason.trim()) {
+    return res.status(400).json({ error: 'توضیح نقص فنی الزامی است.' });
+  }
+
+  db.prepare(
+    `UPDATE h2h_legs SET status = 'technical_issue', technical_issue_reason = ?, technical_issue_reported_by = ? WHERE id = ?`
+  ).run(reason.trim(), req.user.id, leg.id);
+
+  const otherUserId = req.user.id === leg.home_user_id ? leg.away_user_id : leg.home_user_id;
+  notifyUser(otherUserId, `حریف شما نقص فنی در نیم‌فصل ${leg.leg_number} گزارش کرد و منتظر تایید شماست.`, 'warning', `/h2h/${leg.match_id}`);
+
+  res.json({ leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id) });
+});
+
+router.post('/:id/legs/:legNumber/confirm-technical-issue', requireAuth, (req, res) => {
+  const leg = getLegOr404(req.params.id, req.params.legNumber, res);
+  if (!leg) return;
+
+  if (![leg.home_user_id, leg.away_user_id].includes(req.user.id)) {
+    return res.status(403).json({ error: 'شما در این مسابقه شرکت ندارید.' });
+  }
+  if (leg.status !== 'technical_issue') {
+    return res.status(409).json({ error: 'این نیم‌فصل گزارش نقص فنی در انتظار تایید ندارد.' });
+  }
+  if (leg.technical_issue_reported_by === req.user.id) {
+    return res.status(400).json({ error: 'گزارش‌دهنده نمی‌تواند گزارش خودش را تایید کند.' });
+  }
+
+  voidMatch(leg.match_id, leg.technical_issue_reason);
+
+  res.json({
+    leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id),
+    match: publicMatch(db.prepare('SELECT * FROM h2h_matches WHERE id = ?').get(leg.match_id)),
+  });
+});
+
+router.post('/:id/legs/:legNumber/reject-technical-issue', requireAuth, (req, res) => {
+  const leg = getLegOr404(req.params.id, req.params.legNumber, res);
+  if (!leg) return;
+
+  if (![leg.home_user_id, leg.away_user_id].includes(req.user.id)) {
+    return res.status(403).json({ error: 'شما در این مسابقه شرکت ندارید.' });
+  }
+  if (leg.status !== 'technical_issue') {
+    return res.status(409).json({ error: 'این نیم‌فصل گزارش نقص فنی در انتظار تایید ندارد.' });
+  }
+  if (leg.technical_issue_reported_by === req.user.id) {
+    return res.status(400).json({ error: 'گزارش‌دهنده نمی‌تواند گزارش خودش را رد کند.' });
+  }
+
+  db.prepare(
+    `UPDATE h2h_legs SET status = 'expert_review', dispute_evidence = ?, dispute_by_id = ? WHERE id = ?`
+  ).run(`رد گزارش نقص فنی: ${leg.technical_issue_reason}`, req.user.id, leg.id);
+
+  emitExpertQueueUpdate();
+  notifyUser(
+    leg.technical_issue_reported_by,
+    `گزارش نقص فنی شما برای نیم‌فصل ${leg.leg_number} رد شد و به کارشناسی ارجاع شد.`,
+    'warning',
+    `/h2h/${leg.match_id}`
+  );
+
+  res.json({ leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id) });
+});
+
 router.get('/admin/expert-queue', requireAuth, requireMatchExpert, (req, res) => {
   const rows = db.prepare("SELECT * FROM h2h_legs WHERE status = 'expert_review' ORDER BY created_at").all();
   res.json({ legs: withUserInfo(rows) });
@@ -568,6 +679,27 @@ router.post('/:id/legs/:legNumber/expert-resolve', requireAuth, requireMatchExpe
     }
     notifyUser(uid, `کارشناس نتیجه نیم‌فصل ${leg.leg_number} را ${home_score}-${away_score} اعلام کرد.`, 'info', `/h2h/${leg.match_id}`);
   }
+
+  res.json({
+    leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id),
+    match: publicMatch(db.prepare('SELECT * FROM h2h_matches WHERE id = ?').get(leg.match_id)),
+  });
+});
+
+// Lets an expert void the whole match instead of scoring it — the option to
+// take when a rejected technical-issue report (or an ordinary dispute) turns
+// out to genuinely be an unplayable/unfair match rather than a scoring
+// disagreement.
+router.post('/:id/legs/:legNumber/expert-void', requireAuth, requireMatchExpert, (req, res) => {
+  const leg = getLegOr404(req.params.id, req.params.legNumber, res);
+  if (!leg) return;
+
+  if (leg.status !== 'expert_review') {
+    return res.status(409).json({ error: 'این نیم‌فصل در صف بررسی کارشناسی نیست.' });
+  }
+
+  voidMatch(leg.match_id, req.body.reason || leg.technical_issue_reason || leg.dispute_evidence);
+  emitExpertQueueUpdate();
 
   res.json({
     leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id),

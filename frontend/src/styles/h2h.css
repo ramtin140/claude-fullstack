@@ -4,6 +4,23 @@
   gap: 18px;
 }
 
+.btn-link-muted {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btn-link-muted:hover {
+  color: var(--gold);
+}
+
 .h2h-card {
   padding: 20px;
   display: flex;
