@@ -155,3 +155,21 @@ CREATE TABLE IF NOT EXISTS season_archive (
   draws INTEGER NOT NULL DEFAULT 0,
   archived_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Simple key/value config store (currently just the VIP XP threshold).
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+-- VIP player search & challenge: "بازی بر اساس جستجوی یکدیگر کاربران... این
+-- قابلیت برای بازیکنان با اکانت وی‌آی‌پی می‌باشد".
+CREATE TABLE IF NOT EXISTS challenges (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  from_user_id INTEGER NOT NULL REFERENCES users(id),
+  to_user_id INTEGER NOT NULL REFERENCES users(id),
+  status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'accepted' | 'declined'
+  h2h_match_id INTEGER REFERENCES h2h_matches(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  resolved_at TEXT
+);

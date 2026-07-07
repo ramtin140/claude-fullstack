@@ -34,6 +34,17 @@ export function adjustWallet(userId, currency, amount, reason, referenceType = n
      VALUES (?, ?, ?, ?, ?, ?, ?)`
   ).run(userId, currency, amount, reason, referenceType, referenceId, newBalance);
 
+  // Crossing the admin-configured XP threshold auto-grants VIP — "بازکنان
+  // وی‌آی‌پی کسانی هستند که یا اشتراک می‌خرند یا اکسپرینس خاصی دارند".
+  if (currency === 'xp') {
+    const threshold = Number(
+      db.prepare("SELECT value FROM app_settings WHERE key = 'vip_xp_threshold'").get()?.value ?? Infinity
+    );
+    if (newBalance >= threshold) {
+      db.prepare('UPDATE users SET is_vip = 1 WHERE id = ?').run(userId);
+    }
+  }
+
   return newBalance;
 }
 

@@ -7,6 +7,7 @@ import '../styles/pages.css';
 
 const statusLabel = { upcoming: 'در انتظار شروع', in_progress: 'در حال اجرا', finished: 'پایان‌یافته' };
 const statusBadge = { upcoming: 'badge-waiting', in_progress: 'badge-live', finished: 'badge-finished' };
+const typeLabel = { league: 'لیگ', cup: 'کاپ', playoff: 'پلی‌آف' };
 
 export default function Tournaments() {
   const [tournaments, setTournaments] = useState([]);
@@ -37,8 +38,10 @@ export default function Tournaments() {
                 </div>
                 <p>{t.description}</p>
                 <div className="tournament-meta">
+                  <span>{typeLabel[t.type] || t.type}{t.type === 'cup' && t.bracket_size ? ` (${t.bracket_size} نفره)` : ''}</span>
                   <span>
-                    <Users size={14} /> {t.participant_count}/{t.max_players} شرکت‌کننده
+                    <Users size={14} /> {t.participant_count}
+                    {t.type === 'cup' && t.bracket_size ? `/${t.bracket_size}` : ''} شرکت‌کننده
                   </span>
                   <span>
                     <Coins size={14} /> {t.entry_fee.toLocaleString('fa-IR')} تومان

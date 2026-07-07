@@ -33,10 +33,20 @@ db.pragma('foreign_keys = ON');
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf-8');
 db.exec(schema);
 
-// CREATE TABLE IF NOT EXISTS above won't add new columns to a users table
-// that already existed before the ticket/XP economy was introduced, so those
-// additions are applied here as idempotent ALTER TABLEs instead.
-const newUserColumns = [
+// CREATE TABLE IF NOT EXISTS above won't add new columns to a table that
+// already existed before a feature was introduced, so those additions are
+// applied here as idempotent ALTER TABLEs instead.
+function addColumnsIfMissing(table, columns) {
+  for (const [name, definition] of columns) {
+    try {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
+    } catch (err) {
+      if (!/duplicate column/i.test(err.message)) throw err;
+    }
+  }
+}
+
+addColumnsIfMissing('users', [
   ['ticket_balance', 'INTEGER NOT NULL DEFAULT 0'],
   ['xp', 'INTEGER NOT NULL DEFAULT 0'],
   ['season_points', 'INTEGER NOT NULL DEFAULT 0'],
@@ -48,14 +58,21 @@ const newUserColumns = [
   ['psn_id', 'TEXT'],
   ['xbox_id', 'TEXT'],
   ['steam_id', 'TEXT'],
-];
-for (const [name, definition] of newUserColumns) {
-  try {
-    db.exec(`ALTER TABLE users ADD COLUMN ${name} ${definition}`);
-  } catch (err) {
-    if (!/duplicate column/i.test(err.message)) throw err;
-  }
-}
+]);
+
+addColumnsIfMissing('tournaments', [
+  ['bracket_size', 'INTEGER'],
+  ['bracket_generated', 'INTEGER NOT NULL DEFAULT 0'],
+]);
+
+addColumnsIfMissing('matches', [
+  ['round', 'INTEGER'],
+  ['bracket_slot', 'INTEGER'],
+  ['next_match_id', 'INTEGER REFERENCES matches(id)'],
+  ['next_match_slot', 'TEXT'],
+  ['is_bye', 'INTEGER NOT NULL DEFAULT 0'],
+  ['winner_id', 'INTEGER REFERENCES users(id)'],
+]);
 
 // Role model grew from plain member/admin into the spec's actual tiers
 // (مدیر ارشد / نویسنده / کارشناس مسابقات); carry any pre-existing admins

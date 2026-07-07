@@ -239,3 +239,9 @@ if (gameOptionCount === 0) {
   ].forEach(([value, label], i) => insertOption.run('game_version', value, label, i));
   console.log('Seeded default game options (console/game_version).');
 }
+
+const vipThreshold = db.prepare("SELECT value FROM app_settings WHERE key = 'vip_xp_threshold'").get();
+if (!vipThreshold) {
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('vip_xp_threshold', '500')").run();
+  console.log('Seeded default VIP XP threshold (500).');
+}

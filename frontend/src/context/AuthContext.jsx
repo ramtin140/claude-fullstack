@@ -39,8 +39,19 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  // Wallet-affecting actions (join/submit/confirm/dispute a match, admin
+  // wallet adjustments, ...) change the user's balance/grade server-side;
+  // this re-syncs the cached user object so things like the navbar's ticket
+  // count don't go stale after those actions.
+  async function refreshUser() {
+    if (!localStorage.getItem('fifasoul_token')) return;
+    const { data } = await api.get('/auth/me');
+    setUser(data.user);
+    return data.user;
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

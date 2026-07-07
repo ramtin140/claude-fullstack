@@ -1,30 +1,44 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { advanceWinner } from '../services/bracket.js';
 
 const router = Router();
+
+// Bracket-generated matches only carry home_user_id/away_user_id (no free-text
+// home_name/away_name), so resolve display names via a LEFT JOIN — this is
+// the one place the frontend needs to look, rather than every consumer
+// having to separately fetch users to fill in "؟" placeholders.
+const SELECT_WITH_NAMES = `
+  SELECT m.*,
+         hu.name AS home_user_name,
+         au.name AS away_user_name
+  FROM matches m
+  LEFT JOIN users hu ON hu.id = m.home_user_id
+  LEFT JOIN users au ON au.id = m.away_user_id
+`;
 
 router.get('/', (req, res) => {
   const { status, category } = req.query;
   const clauses = [];
   const params = [];
   if (status) {
-    clauses.push('status = ?');
+    clauses.push('m.status = ?');
     params.push(status);
   }
   if (category) {
-    clauses.push('category = ?');
+    clauses.push('m.category = ?');
     params.push(category);
   }
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
   const rows = db
-    .prepare(`SELECT * FROM matches ${where} ORDER BY created_at DESC`)
+    .prepare(`${SELECT_WITH_NAMES} ${where} ORDER BY m.created_at DESC`)
     .all(...params);
   res.json({ matches: rows });
 });
 
 router.get('/:id', (req, res) => {
-  const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(req.params.id);
+  const match = db.prepare(`${SELECT_WITH_NAMES} WHERE m.id = ?`).get(req.params.id);
   if (!match) return res.status(404).json({ error: 'مسابقه یافت نشد.' });
   res.json({ match });
 });
@@ -79,6 +93,10 @@ router.put('/:id', requireAuth, requireAdmin, (req, res) => {
     merged.scheduled_at,
     req.params.id
   );
+
+  if (merged.status === 'finished' && merged.home_score != null && merged.away_score != null) {
+    advanceWinner(req.params.id);
+  }
 
   const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(req.params.id);
   res.json({ match });

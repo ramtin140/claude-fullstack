@@ -62,4 +62,20 @@ router.get('/season/archive', requireAuth, requireAdmin, (req, res) => {
   res.json({ archive: rows });
 });
 
+router.get('/vip-threshold', requireAuth, requireAdmin, (req, res) => {
+  const row = db.prepare("SELECT value FROM app_settings WHERE key = 'vip_xp_threshold'").get();
+  res.json({ threshold: Number(row?.value ?? 500) });
+});
+
+router.put('/vip-threshold', requireAuth, requireAdmin, (req, res) => {
+  const { threshold } = req.body;
+  if (!Number.isInteger(threshold) || threshold < 0) {
+    return res.status(400).json({ error: 'مقدار آستانه نامعتبر است.' });
+  }
+  db.prepare(
+    "INSERT INTO app_settings (key, value) VALUES ('vip_xp_threshold', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+  ).run(String(threshold));
+  res.json({ threshold });
+});
+
 export default router;

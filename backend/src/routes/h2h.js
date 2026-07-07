@@ -5,6 +5,7 @@ import { requireAuth, requireMatchExpert } from '../middleware/auth.js';
 import { adjustWallet, getBalance } from '../services/wallet.js';
 import { addSeasonPoints, RESULT_POINTS } from '../services/grading.js';
 import { sendEmailNotification } from '../services/notify.js';
+import { uploadEvidence, publicEvidenceUrl } from '../middleware/upload.js';
 
 const router = Router();
 
@@ -287,31 +288,43 @@ router.post('/:id/legs/:legNumber/confirm', requireAuth, (req, res) => {
   });
 });
 
+// multipart/form-data: fields arrive as strings, an optional evidence_file
+// upload arrives as req.file — "عکس از مستندات بازی برای کارشناس می‌فرستد".
 router.post('/:id/legs/:legNumber/dispute', requireAuth, (req, res) => {
-  const leg = getLegOr404(req.params.id, req.params.legNumber, res);
-  if (!leg) return;
+  uploadEvidence(req, res, (uploadErr) => {
+    if (uploadErr) return res.status(400).json({ error: uploadErr.message });
 
-  if (![leg.home_user_id, leg.away_user_id].includes(req.user.id)) {
-    return res.status(403).json({ error: 'شما در این مسابقه شرکت ندارید.' });
-  }
-  if (leg.status !== 'pending_confirmation') {
-    return res.status(409).json({ error: 'این نیم‌فصل در وضعیت قابل اعتراض نیست.' });
-  }
-  if (leg.submitted_by_id === req.user.id) {
-    return res.status(400).json({ error: 'ثبت‌کننده نتیجه نمی‌تواند به آن اعتراض کند.' });
-  }
+    const leg = getLegOr404(req.params.id, req.params.legNumber, res);
+    if (!leg) return;
 
-  const { home_score, away_score, evidence } = req.body;
-  if (!Number.isInteger(home_score) || !Number.isInteger(away_score)) {
-    return res.status(400).json({ error: 'نتیجه پیشنهادی نامعتبر است.' });
-  }
+    if (![leg.home_user_id, leg.away_user_id].includes(req.user.id)) {
+      return res.status(403).json({ error: 'شما در این مسابقه شرکت ندارید.' });
+    }
+    if (leg.status !== 'pending_confirmation') {
+      return res.status(409).json({ error: 'این نیم‌فصل در وضعیت قابل اعتراض نیست.' });
+    }
+    if (leg.submitted_by_id === req.user.id) {
+      return res.status(400).json({ error: 'ثبت‌کننده نتیجه نمی‌تواند به آن اعتراض کند.' });
+    }
 
-  db.prepare(
-    `UPDATE h2h_legs SET dispute_home_score = ?, dispute_away_score = ?, dispute_evidence = ?, dispute_by_id = ?,
-     status = 'expert_review' WHERE id = ?`
-  ).run(home_score, away_score, evidence || null, req.user.id, leg.id);
+    const home_score = Number(req.body.home_score);
+    const away_score = Number(req.body.away_score);
+    if (!Number.isInteger(home_score) || !Number.isInteger(away_score)) {
+      return res.status(400).json({ error: 'نتیجه پیشنهادی نامعتبر است.' });
+    }
 
-  res.json({ leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id) });
+    const noteParts = [];
+    if (req.body.evidence) noteParts.push(req.body.evidence);
+    if (req.file) noteParts.push(publicEvidenceUrl(req.file.filename));
+    const evidence = noteParts.join(' | ') || null;
+
+    db.prepare(
+      `UPDATE h2h_legs SET dispute_home_score = ?, dispute_away_score = ?, dispute_evidence = ?, dispute_by_id = ?,
+       status = 'expert_review' WHERE id = ?`
+    ).run(home_score, away_score, evidence, req.user.id, leg.id);
+
+    res.json({ leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id) });
+  });
 });
 
 router.get('/admin/expert-queue', requireAuth, requireMatchExpert, (req, res) => {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, Pencil, Trash2, Shuffle, Eye } from 'lucide-react';
 import { api } from '../../api/client.js';
 import '../../styles/admin.css';
 
@@ -11,7 +12,10 @@ const emptyForm = {
   entry_fee: 0,
   max_players: 16,
   start_date: '',
+  bracket_size: 4,
 };
+
+const typeLabel = { league: 'لیگ', cup: 'کاپ', playoff: 'پلی‌آف' };
 
 export default function AdminTournaments() {
   const [tournaments, setTournaments] = useState([]);
@@ -62,6 +66,15 @@ export default function AdminTournaments() {
     load();
   }
 
+  async function handleGenerate(t) {
+    try {
+      await api.post(`/tournaments/${t.id}/generate-bracket`);
+      load();
+    } catch (err) {
+      alert(err.response?.data?.error || 'خطا در ساخت برکت/جدول');
+    }
+  }
+
   return (
     <div>
       <div className="admin-header">
@@ -77,9 +90,9 @@ export default function AdminTournaments() {
             <tr>
               <th>عنوان</th>
               <th>نوع</th>
+              <th>شرکت‌کننده</th>
               <th>وضعیت</th>
-              <th>ورودی</th>
-              <th>ظرفیت</th>
+              <th>برکت/جدول</th>
               <th>عملیات</th>
             </tr>
           </thead>
@@ -87,12 +100,26 @@ export default function AdminTournaments() {
             {tournaments.map((t) => (
               <tr key={t.id}>
                 <td>{t.title}</td>
-                <td>{t.type === 'league' ? 'لیگ' : 'کاپ'}</td>
+                <td>
+                  {typeLabel[t.type] || t.type}
+                  {t.type === 'cup' && t.bracket_size ? ` (${t.bracket_size} نفره)` : ''}
+                </td>
+                <td>{t.participant_count}</td>
                 <td>{t.status}</td>
-                <td>{t.entry_fee.toLocaleString('fa-IR')}</td>
-                <td>{t.max_players}</td>
+                <td>
+                  {t.bracket_generated ? (
+                    <span className="badge badge-live">ساخته‌شده</span>
+                  ) : (
+                    <button className="btn btn-outline" style={{ padding: '6px 14px' }} onClick={() => handleGenerate(t)}>
+                      <Shuffle size={14} /> ساخت برکت/جدول
+                    </button>
+                  )}
+                </td>
                 <td>
                   <div className="row-actions">
+                    <Link to={`/tournaments/${t.id}`} className="icon-btn" title="مشاهده">
+                      <Eye size={15} />
+                    </Link>
                     <button className="icon-btn" onClick={() => openEdit(t)}>
                       <Pencil size={15} />
                     </button>
@@ -119,10 +146,24 @@ export default function AdminTournaments() {
               <div className="form-field">
                 <label>نوع</label>
                 <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                  <option value="league">لیگ</option>
-                  <option value="cup">کاپ</option>
+                  <option value="league">لیگ (جدول امتیازات)</option>
+                  <option value="cup">کاپ (برکت حذفی)</option>
+                  <option value="playoff">پلی‌آف (قرعه‌کشی تصادفی)</option>
                 </select>
               </div>
+              {form.type === 'cup' && (
+                <div className="form-field">
+                  <label>اندازه کاپ</label>
+                  <select
+                    value={form.bracket_size || 4}
+                    onChange={(e) => setForm({ ...form, bracket_size: Number(e.target.value) })}
+                  >
+                    <option value={4}>۴ نفره</option>
+                    <option value={8}>۸ نفره</option>
+                    <option value={16}>۱۶ نفره</option>
+                  </select>
+                </div>
+              )}
               <div className="form-field">
                 <label>توضیحات</label>
                 <textarea

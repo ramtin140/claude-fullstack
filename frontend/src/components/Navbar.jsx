@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut, ShieldCheck } from 'lucide-react';
+import { Menu, X, User, LogOut, ShieldCheck, Wallet as WalletIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { isStaff } from './ProtectedRoute.jsx';
 import '../styles/layout.css';
@@ -8,6 +8,7 @@ import '../styles/layout.css';
 const links = [
   { to: '/', label: 'خانه' },
   { to: '/tournaments', label: 'مسابقات' },
+  { to: '/h2h', label: 'رو-در-رو' },
   { to: '/news', label: 'اخبار' },
   { to: '/about', label: 'درباره ما' },
   { to: '/contact', label: 'تماس با ما' },
@@ -37,6 +38,10 @@ export default function Navbar() {
         <div className="nav-actions">
           {user ? (
             <>
+              <Link to="/wallet" className="user-chip" title="کیف پول">
+                <WalletIcon size={16} />
+                {user.ticket_balance ?? 0}
+              </Link>
               <Link
                 to={isStaff(user) ? '/admin' : '/dashboard'}
                 className="user-chip"

@@ -95,8 +95,8 @@ export default function AdminMatches() {
           <tbody>
             {matches.map((m) => (
               <tr key={m.id}>
-                <td>{m.home_name}</td>
-                <td>{m.away_name || '؟'}</td>
+                <td>{m.home_name || m.home_user_name || '؟'}</td>
+                <td>{m.away_name || m.away_user_name || '؟'}</td>
                 <td>{m.home_score != null ? `${m.home_score} - ${m.away_score}` : '-'}</td>
                 <td>{m.status}</td>
                 <td>{m.category === 'ro_dero' ? 'رو در رو' : 'پلی آف'}</td>

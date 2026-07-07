@@ -5,6 +5,7 @@ import morgan from 'morgan';
 
 import './db/index.js';
 import './db/seed.js';
+import { uploadsDir } from './middleware/upload.js';
 
 import authRoutes from './routes/auth.js';
 import tournamentRoutes from './routes/tournaments.js';
@@ -17,6 +18,7 @@ import h2hRoutes from './routes/h2h.js';
 import walletRoutes from './routes/wallet.js';
 import adminEconomyRoutes from './routes/admin-economy.js';
 import gameOptionsRoutes from './routes/game-options.js';
+import challengesRoutes from './routes/challenges.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -31,6 +33,7 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
+app.use('/uploads', express.static(uploadsDir));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tournaments', tournamentRoutes);
@@ -43,6 +46,7 @@ app.use('/api/h2h', h2hRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/admin', adminEconomyRoutes);
 app.use('/api/game-options', gameOptionsRoutes);
+app.use('/api/challenges', challengesRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'مسیر یافت نشد.' }));
 

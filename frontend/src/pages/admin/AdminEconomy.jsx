@@ -1,109 +1,215 @@
 import { useEffect, useState } from 'react';
-import { adminEconomyApi } from '../../api/h2h.js';
+import { api } from '../../api/client.js';
 import '../../styles/admin.css';
-import '../../styles/h2h.css';
 
 export default function AdminEconomy() {
   const [thresholds, setThresholds] = useState([]);
+  const [vipThreshold, setVipThreshold] = useState(500);
   const [archive, setArchive] = useState([]);
   const [walletForm, setWalletForm] = useState({ userId: '', currency: 'ticket', amount: 1, reason: 'admin_adjustment' });
   const [seasonName, setSeasonName] = useState('');
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [message, setMessage] = useState(null);
+  const [error, setError] = useState(null);
 
-  const load = () => {
-    Promise.allSettled([adminEconomyApi.gradeThresholds(), adminEconomyApi.seasonArchive()]).then(([g, a]) => {
-      if (g.status === 'fulfilled') setThresholds(g.value.data.thresholds || []);
-      if (a.status === 'fulfilled') setArchive(a.value.data.archive || []);
-    });
-  };
+  function load() {
+    api.get('/admin/grade-thresholds').then(({ data }) => setThresholds(data.thresholds));
+    api.get('/admin/vip-threshold').then(({ data }) => setVipThreshold(data.threshold));
+    api.get('/admin/season/archive').then(({ data }) => setArchive(data.archive));
+  }
 
-  useEffect(() => { load(); }, []);
+  useEffect(load, []);
 
-  const setThreshold = (grade, key, value) => setThresholds((rows) => rows.map((r) => r.grade === grade ? { ...r, [key]: value } : r));
-
-  const saveThreshold = async (row) => {
-    setError(''); setMessage('');
+  async function saveThreshold(row) {
+    setError(null);
+    setMessage(null);
     try {
-      await adminEconomyApi.updateGradeThreshold(row.grade, {
+      await api.put(`/admin/grade-thresholds/${row.grade}`, {
         min_points: Number(row.min_points),
-        max_points: row.max_points === '' || row.max_points === null ? null : Number(row.max_points),
+        max_points: row.max_points === null || row.max_points === '' ? null : Number(row.max_points),
       });
       setMessage(`گرید ${row.grade} ذخیره شد.`);
       load();
-    } catch (err) { setError(err.response?.data?.error || 'ذخیره گرید ناموفق بود.'); }
-  };
+    } catch (err) {
+      setError(err.response?.data?.error || 'خطا در ذخیره گرید');
+    }
+  }
 
-  const adjustWallet = async (e) => {
-    e.preventDefault(); setError(''); setMessage('');
+  async function saveVipThreshold() {
+    setError(null);
+    setMessage(null);
     try {
-      await adminEconomyApi.adjustWallet(walletForm.userId, { currency: walletForm.currency, amount: Number(walletForm.amount), reason: walletForm.reason });
-      setMessage('کیف پول کاربر با موفقیت تغییر کرد.');
-      setWalletForm({ userId: '', currency: 'ticket', amount: 1, reason: 'admin_adjustment' });
-    } catch (err) { setError(err.response?.data?.error || 'تغییر کیف پول ناموفق بود.'); }
-  };
+      await api.put('/admin/vip-threshold', { threshold: Number(vipThreshold) });
+      setMessage('آستانه اکسپرینس وی‌آی‌پی ذخیره شد.');
+    } catch (err) {
+      setError(err.response?.data?.error || 'خطا در ذخیره‌سازی');
+    }
+  }
 
-  const resetSeason = async (e) => {
-    e.preventDefault(); setError(''); setMessage('');
+  async function adjustWallet(e) {
+    e.preventDefault();
+    setError(null);
+    setMessage(null);
     try {
-      await adminEconomyApi.resetSeason({ season_name: seasonName });
-      setMessage('فصل بایگانی شد و امتیازهای فصلی صفر شد.');
+      const { data } = await api.post(`/admin/wallet/${walletForm.userId}/adjust`, {
+        currency: walletForm.currency,
+        amount: Number(walletForm.amount),
+        reason: walletForm.reason,
+      });
+      setMessage(`موجودی جدید کاربر #${walletForm.userId}: ${data.balance}`);
+    } catch (err) {
+      setError(err.response?.data?.error || 'خطا در تنظیم کیف پول');
+    }
+  }
+
+  async function resetSeason(e) {
+    e.preventDefault();
+    setError(null);
+    setMessage(null);
+    if (!confirm('آیا از بازنشانی فصل مطمئن هستید؟ امتیاز فصلی همه کاربران صفر می‌شود.')) return;
+    try {
+      const { data } = await api.post('/admin/season/reset', { season_name: seasonName });
+      setMessage(`${data.archived_users} کاربر بایگانی و فصل جدید شروع شد.`);
       setSeasonName('');
       load();
-    } catch (err) { setError(err.response?.data?.error || 'بازنشانی فصل ناموفق بود.'); }
-  };
+    } catch (err) {
+      setError(err.response?.data?.error || 'خطا در بازنشانی فصل');
+    }
+  }
 
   return (
     <div>
-      <h1>اقتصاد بازی و گریدها</h1>
-      <p className="h2h-muted">مدیریت تیکت، XP، گریدها و بایگانی فصل‌ها</p>
-      {message && <div className="h2h-message success">{message}</div>}
-      {error && <div className="h2h-message error">{error}</div>}
+      <div className="admin-header">
+        <h1>مدیریت اقتصاد و گریدبندی</h1>
+      </div>
 
-      <div className="h2h-grid">
-        <div className="card">
-          <h3>شارژ / کسر کیف پول کاربر</h3>
-          <form className="h2h-form" onSubmit={adjustWallet}>
-            <label>ID کاربر<input value={walletForm.userId} onChange={(e) => setWalletForm({ ...walletForm, userId: e.target.value })} /></label>
-            <label>نوع<select value={walletForm.currency} onChange={(e) => setWalletForm({ ...walletForm, currency: e.target.value })}><option value="ticket">تیکت</option><option value="xp">XP</option></select></label>
-            <label>مقدار<input type="number" value={walletForm.amount} onChange={(e) => setWalletForm({ ...walletForm, amount: e.target.value })} /></label>
-            <label>دلیل<input value={walletForm.reason} onChange={(e) => setWalletForm({ ...walletForm, reason: e.target.value })} /></label>
-            <button className="btn btn-primary">ثبت تغییر</button>
-          </form>
-        </div>
+      {message && <p className="success-text">{message}</p>}
+      {error && <p className="error-text">{error}</p>}
 
-        <div className="card">
-          <h3>بازنشانی فصل</h3>
-          <form className="h2h-form" onSubmit={resetSeason}>
-            <label>نام فصل برای آرشیو<input value={seasonName} onChange={(e) => setSeasonName(e.target.value)} placeholder="مثلاً تابستان ۱۴۰۵" /></label>
-            <button className="btn btn-outline">بایگانی و صفر کردن فصل</button>
-          </form>
+      <div className="card" style={{ padding: 20, marginBottom: 24 }}>
+        <h3 style={{ marginTop: 0, color: 'var(--gold)' }}>آستانه اکسپرینس برای عضویت VIP</h3>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <input
+            type="number"
+            min={0}
+            value={vipThreshold}
+            onChange={(e) => setVipThreshold(e.target.value)}
+            style={{ width: 140, padding: 10, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
+          />
+          <button className="btn btn-primary" onClick={saveVipThreshold}>
+            ذخیره
+          </button>
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 18 }}>
-        <h3>تنظیم گریدها</h3>
-        <table className="h2h-table">
-          <thead><tr><th>گرید</th><th>حداقل امتیاز</th><th>حداکثر امتیاز</th><th></th></tr></thead>
+      <div className="card" style={{ overflowX: 'auto', marginBottom: 24 }}>
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>گرید</th>
+              <th>حداقل امتیاز</th>
+              <th>حداکثر امتیاز</th>
+              <th>عملیات</th>
+            </tr>
+          </thead>
           <tbody>
             {thresholds.map((row) => (
               <tr key={row.grade}>
                 <td>{row.grade}</td>
-                <td><input type="number" value={row.min_points ?? ''} onChange={(e) => setThreshold(row.grade, 'min_points', e.target.value)} /></td>
-                <td><input type="number" value={row.max_points ?? ''} onChange={(e) => setThreshold(row.grade, 'max_points', e.target.value)} /></td>
-                <td><button className="btn btn-primary" onClick={() => saveThreshold(row)}>ذخیره</button></td>
+                <td>
+                  <input
+                    type="number"
+                    defaultValue={row.min_points}
+                    onChange={(e) => (row.min_points = e.target.value)}
+                    style={{ width: 90, padding: 6, borderRadius: 6, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    defaultValue={row.max_points ?? ''}
+                    placeholder="نامحدود"
+                    onChange={(e) => (row.max_points = e.target.value)}
+                    style={{ width: 90, padding: 6, borderRadius: 6, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
+                  />
+                </td>
+                <td>
+                  <button className="btn btn-outline" style={{ padding: '6px 14px' }} onClick={() => saveThreshold(row)}>
+                    ذخیره
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="card" style={{ marginTop: 18 }}>
-        <h3>آرشیو فصل‌ها</h3>
-        {archive.length === 0 ? <p>آرشیوی ثبت نشده است.</p> : (
-          <table className="h2h-table"><thead><tr><th>فصل</th><th>کاربر</th><th>امتیاز</th><th>گرید</th><th>تاریخ</th></tr></thead><tbody>{archive.map((row) => <tr key={row.id}><td>{row.season_name}</td><td>{row.user_id}</td><td>{row.season_points}</td><td>{row.grade}</td><td>{row.archived_at}</td></tr>)}</tbody></table>
-        )}
+      <div className="card" style={{ padding: 20, marginBottom: 24 }}>
+        <h3 style={{ marginTop: 0, color: 'var(--gold)' }}>شارژ دستی کیف پول</h3>
+        <form onSubmit={adjustWallet} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <div className="form-field" style={{ marginBottom: 0 }}>
+            <label>شناسه کاربر</label>
+            <input required value={walletForm.userId} onChange={(e) => setWalletForm({ ...walletForm, userId: e.target.value })} />
+          </div>
+          <div className="form-field" style={{ marginBottom: 0 }}>
+            <label>ارز</label>
+            <select value={walletForm.currency} onChange={(e) => setWalletForm({ ...walletForm, currency: e.target.value })}>
+              <option value="ticket">تیکت</option>
+              <option value="xp">XP</option>
+            </select>
+          </div>
+          <div className="form-field" style={{ marginBottom: 0 }}>
+            <label>مقدار (منفی = کسر)</label>
+            <input type="number" required value={walletForm.amount} onChange={(e) => setWalletForm({ ...walletForm, amount: e.target.value })} />
+          </div>
+          <button className="btn btn-primary" type="submit">
+            اعمال
+          </button>
+        </form>
       </div>
+
+      <div className="card" style={{ padding: 20, marginBottom: 24 }}>
+        <h3 style={{ marginTop: 0, color: 'var(--gold)' }}>بازنشانی فصل (بایگانی + صفر کردن امتیاز فصلی)</h3>
+        <form onSubmit={resetSeason} style={{ display: 'flex', gap: 10 }}>
+          <input
+            required
+            placeholder="نام فصل، مثلاً 1405-Q3"
+            value={seasonName}
+            onChange={(e) => setSeasonName(e.target.value)}
+            style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
+          />
+          <button className="btn btn-magenta" type="submit">
+            بازنشانی فصل
+          </button>
+        </form>
+      </div>
+
+      {archive.length > 0 && (
+        <div className="card" style={{ overflowX: 'auto' }}>
+          <h3 style={{ padding: '18px 18px 0', color: 'var(--gold)' }}>بایگانی فصل‌های قبلی</h3>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>کاربر</th>
+                <th>فصل</th>
+                <th>امتیاز</th>
+                <th>گرید</th>
+                <th>برد/باخت/مساوی</th>
+              </tr>
+            </thead>
+            <tbody>
+              {archive.map((row) => (
+                <tr key={row.id}>
+                  <td>#{row.user_id}</td>
+                  <td>{row.season_name}</td>
+                  <td>{row.season_points}</td>
+                  <td>{row.grade}</td>
+                  <td>{row.wins}/{row.losses}/{row.draws}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

@@ -14,6 +14,11 @@ import Dashboard from './pages/Dashboard.jsx';
 import About from './pages/About.jsx';
 import Contact from './pages/Contact.jsx';
 import NotFound from './pages/NotFound.jsx';
+import H2HList from './pages/H2HList.jsx';
+import H2HCreate from './pages/H2HCreate.jsx';
+import H2HDetail from './pages/H2HDetail.jsx';
+import Wallet from './pages/Wallet.jsx';
+import PlayerSearch from './pages/PlayerSearch.jsx';
 
 import AdminLayout from './pages/admin/AdminLayout.jsx';
 import AdminDashboard from './pages/admin/AdminDashboard.jsx';
@@ -23,6 +28,7 @@ import AdminNews from './pages/admin/AdminNews.jsx';
 import AdminUsers from './pages/admin/AdminUsers.jsx';
 import AdminGameOptions from './pages/admin/AdminGameOptions.jsx';
 import AdminExpertQueue from './pages/admin/AdminExpertQueue.jsx';
+import AdminEconomy from './pages/admin/AdminEconomy.jsx';
 
 export default function App() {
   return (
@@ -38,6 +44,32 @@ export default function App() {
         <Route path="/news/:id" element={<NewsDetail />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/h2h" element={<H2HList />} />
+        <Route path="/h2h/:id" element={<H2HDetail />} />
+        <Route
+          path="/h2h/new"
+          element={
+            <ProtectedRoute>
+              <H2HCreate />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/wallet"
+          element={
+            <ProtectedRoute>
+              <Wallet />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/players"
+          element={
+            <ProtectedRoute>
+              <PlayerSearch />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={
@@ -100,6 +132,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={['match_expert']}>
                 <AdminExpertQueue />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="economy"
+            element={
+              <ProtectedRoute roles={[]}>
+                <AdminEconomy />
               </ProtectedRoute>
             }
           />
