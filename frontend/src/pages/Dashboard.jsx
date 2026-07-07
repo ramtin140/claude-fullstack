@@ -17,6 +17,9 @@ export default function Dashboard() {
       <div className="page-header">
         <h1>سلام {user.name} 👋</h1>
         <p>خلاصه فعالیت‌ها و آمار حساب کاربری شما</p>
+        <p style={{ fontFamily: 'monospace', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+          fifa soul ID: {user.fifa_soul_id} {user.is_guest ? '· کاربر مهمان' : ''}
+        </p>
       </div>
       <div className="container" style={{ paddingBottom: 60 }}>
         <div className="dashboard-grid">
@@ -39,6 +42,14 @@ export default function Dashboard() {
             <Target color="var(--gold)" />
             <div className="value">{user.wins + user.losses}</div>
             <div className="label">مجموع مسابقات</div>
+          </div>
+          <div className="card dashboard-stat">
+            <div className="value" style={{ color: 'var(--gold)' }}>{user.grade}</div>
+            <div className="label">گرید فصلی ({user.season_points} امتیاز)</div>
+          </div>
+          <div className="card dashboard-stat">
+            <div className="value">{user.ticket_balance}</div>
+            <div className="label">موجودی تیکت</div>
           </div>
         </div>
 

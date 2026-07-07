@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
-import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { requireAuth, requireContentManager } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -18,7 +18,7 @@ router.get('/:id', (req, res) => {
   res.json({ news: item });
 });
 
-router.post('/', requireAuth, requireAdmin, (req, res) => {
+router.post('/', requireAuth, requireContentManager, (req, res) => {
   const { title, excerpt, body, cover_image, category } = req.body;
   if (!title) return res.status(400).json({ error: 'عنوان خبر الزامی است.' });
 
@@ -32,7 +32,7 @@ router.post('/', requireAuth, requireAdmin, (req, res) => {
   res.status(201).json({ news: item });
 });
 
-router.put('/:id', requireAuth, requireAdmin, (req, res) => {
+router.put('/:id', requireAuth, requireContentManager, (req, res) => {
   const existing = db.prepare('SELECT * FROM news WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'خبر یافت نشد.' });
 
@@ -45,7 +45,7 @@ router.put('/:id', requireAuth, requireAdmin, (req, res) => {
   res.json({ news: item });
 });
 
-router.delete('/:id', requireAuth, requireAdmin, (req, res) => {
+router.delete('/:id', requireAuth, requireContentManager, (req, res) => {
   db.prepare('DELETE FROM news WHERE id = ?').run(req.params.id);
   res.status(204).end();
 });

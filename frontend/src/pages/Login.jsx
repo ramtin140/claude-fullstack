@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { isStaff } from '../components/ProtectedRoute.jsx';
 import '../styles/auth.css';
 
 export default function Login() {
@@ -16,7 +17,7 @@ export default function Login() {
     setLoading(true);
     try {
       const user = await login(form.email, form.password);
-      navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+      navigate(isStaff(user) ? '/admin' : '/dashboard');
     } catch (err) {
       setError(err.response?.data?.error || 'ورود ناموفق بود.');
     } finally {
@@ -59,7 +60,8 @@ export default function Login() {
           حساب کاربری ندارید؟ <Link to="/register">ثبت‌نام کنید</Link>
         </p>
         <p className="auth-switch" style={{ fontSize: '0.78rem' }}>
-          دسترسی آزمایشی مدیر: admin@fifasoul.test / admin123
+          دسترسی‌های آزمایشی: admin@fifasoul.test (مدیر ارشد) / writer@fifasoul.test (نویسنده) / expert@fifasoul.test
+          (کارشناس) — رمز همه: admin123
         </p>
       </div>
     </div>

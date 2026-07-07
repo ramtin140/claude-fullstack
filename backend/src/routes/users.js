@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
-import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { requireAuth, requireAdmin, ROLES } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -16,7 +16,7 @@ router.get('/', requireAuth, requireAdmin, (req, res) => {
 
 router.put('/:id/role', requireAuth, requireAdmin, (req, res) => {
   const { role } = req.body;
-  if (!['member', 'admin'].includes(role)) {
+  if (!ROLES.includes(role)) {
     return res.status(400).json({ error: 'نقش نامعتبر است.' });
   }
   db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, req.params.id);

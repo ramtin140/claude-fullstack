@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { db } from '../db/index.js';
-import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { requireAuth, requireMatchExpert } from '../middleware/auth.js';
 import { adjustWallet, getBalance } from '../services/wallet.js';
 import { addSeasonPoints, RESULT_POINTS } from '../services/grading.js';
 import { sendEmailNotification } from '../services/notify.js';
@@ -314,12 +314,12 @@ router.post('/:id/legs/:legNumber/dispute', requireAuth, (req, res) => {
   res.json({ leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id) });
 });
 
-router.get('/admin/expert-queue', requireAuth, requireAdmin, (req, res) => {
+router.get('/admin/expert-queue', requireAuth, requireMatchExpert, (req, res) => {
   const rows = db.prepare("SELECT * FROM h2h_legs WHERE status = 'expert_review' ORDER BY created_at").all();
   res.json({ legs: rows });
 });
 
-router.post('/:id/legs/:legNumber/expert-resolve', requireAuth, requireAdmin, (req, res) => {
+router.post('/:id/legs/:legNumber/expert-resolve', requireAuth, requireMatchExpert, (req, res) => {
   const leg = getLegOr404(req.params.id, req.params.legNumber, res);
   if (!leg) return;
 

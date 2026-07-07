@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { db } from './index.js';
+import { generateFifaSoulId } from '../services/identity.js';
 
 const userCount = db.prepare('SELECT COUNT(*) AS c FROM users').get().c;
 
@@ -7,19 +8,19 @@ if (userCount === 0) {
   console.log('Seeding database...');
 
   const insertUser = db.prepare(`
-    INSERT INTO users (name, email, password_hash, role, points, wins, losses, ticket_balance, xp, season_points, grade)
-    VALUES (@name, @email, @password_hash, @role, @points, @wins, @losses, @ticket_balance, @xp, @season_points, @grade)
+    INSERT INTO users (name, email, password_hash, role, points, wins, losses, ticket_balance, xp, season_points, grade, fifa_soul_id, psn_id)
+    VALUES (@name, @email, @password_hash, @role, @points, @wins, @losses, @ticket_balance, @xp, @season_points, @grade, @fifa_soul_id, @psn_id)
   `);
 
   const passwordHash = bcrypt.hashSync('password123', 10);
   const adminHash = bcrypt.hashSync('admin123', 10);
 
   const members = [
-    { name: 'Mamad Fifa', email: 'mamad@fifasoul.test', points: 980, wins: 41, losses: 6, season_points: 665, grade: 'A' },
-    { name: 'Hamid k2', email: 'hamid@fifasoul.test', points: 870, wins: 33, losses: 9, season_points: 490, grade: 'B' },
-    { name: 'Amin 32', email: 'amin@fifasoul.test', points: 810, wins: 30, losses: 11, season_points: 380, grade: 'C' },
-    { name: 'Navid game', email: 'navid@fifasoul.test', points: 790, wins: 28, losses: 10, season_points: 260, grade: 'D' },
-    { name: 'reza toyota', email: 'reza@fifasoul.test', points: 640, wins: 22, losses: 14, season_points: 140, grade: 'D' },
+    { name: 'Mamad Fifa', email: 'mamad@fifasoul.test', points: 980, wins: 41, losses: 6, season_points: 665, grade: 'A', psn_id: 'mamad_fifa_psn' },
+    { name: 'Hamid k2', email: 'hamid@fifasoul.test', points: 870, wins: 33, losses: 9, season_points: 490, grade: 'B', psn_id: 'hamid_k2_psn' },
+    { name: 'Amin 32', email: 'amin@fifasoul.test', points: 810, wins: 30, losses: 11, season_points: 380, grade: 'C', psn_id: 'amin_32_psn' },
+    { name: 'Navid game', email: 'navid@fifasoul.test', points: 790, wins: 28, losses: 10, season_points: 260, grade: 'D', psn_id: null },
+    { name: 'reza toyota', email: 'reza@fifasoul.test', points: 640, wins: 22, losses: 14, season_points: 140, grade: 'D', psn_id: null },
   ];
 
   const memberIds = {};
@@ -36,6 +37,8 @@ if (userCount === 0) {
       xp: m.season_points,
       season_points: m.season_points,
       grade: m.grade,
+      fifa_soul_id: generateFifaSoulId(),
+      psn_id: m.psn_id,
     });
     memberIds[m.name] = info.lastInsertRowid;
   }
@@ -44,7 +47,7 @@ if (userCount === 0) {
     name: 'مدیر سایت',
     email: 'admin@fifasoul.test',
     password_hash: adminHash,
-    role: 'admin',
+    role: 'senior_admin',
     points: 0,
     wins: 0,
     losses: 0,
@@ -52,6 +55,43 @@ if (userCount === 0) {
     xp: 0,
     season_points: 0,
     grade: 'D',
+    fifa_soul_id: generateFifaSoulId(),
+    psn_id: null,
+  });
+
+  // A writer (news/tutorials) and a match_expert (h2h dispute queue) so the
+  // multi-tier admin roles have someone to log in and test with beyond the
+  // one senior_admin account.
+  insertUser.run({
+    name: 'نویسنده سایت',
+    email: 'writer@fifasoul.test',
+    password_hash: adminHash,
+    role: 'writer',
+    points: 0,
+    wins: 0,
+    losses: 0,
+    ticket_balance: 0,
+    xp: 0,
+    season_points: 0,
+    grade: 'D',
+    fifa_soul_id: generateFifaSoulId(),
+    psn_id: null,
+  });
+
+  insertUser.run({
+    name: 'کارشناس مسابقات',
+    email: 'expert@fifasoul.test',
+    password_hash: adminHash,
+    role: 'match_expert',
+    points: 0,
+    wins: 0,
+    losses: 0,
+    ticket_balance: 0,
+    xp: 0,
+    season_points: 0,
+    grade: 'D',
+    fifa_soul_id: generateFifaSoulId(),
+    psn_id: null,
   });
 
   const insertTournament = db.prepare(`
@@ -179,4 +219,23 @@ if (gradeThresholdCount === 0) {
   insertGrade.run('B', 450, 599);
   insertGrade.run('A', 600, null);
   console.log('Seeded default grade thresholds (D/C/B/A).');
+}
+
+const gameOptionCount = db.prepare('SELECT COUNT(*) AS c FROM game_options').get().c;
+if (gameOptionCount === 0) {
+  const insertOption = db.prepare(
+    'INSERT INTO game_options (category, value, label, sort_order) VALUES (?, ?, ?, ?)'
+  );
+  [
+    ['pc', 'PC'],
+    ['xbox', 'Xbox'],
+    ['ps4', 'PlayStation 4'],
+  ].forEach(([value, label], i) => insertOption.run('console', value, label, i));
+  [
+    ['fifa18', 'FIFA 18'],
+    ['fifa19', 'FIFA 19'],
+    ['pes18', 'PES 18'],
+    ['pes19', 'PES 19'],
+  ].forEach(([value, label], i) => insertOption.run('game_version', value, label, i));
+  console.log('Seeded default game options (console/game_version).');
 }

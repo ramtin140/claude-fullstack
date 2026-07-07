@@ -2,6 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { db } from '../db/index.js';
 import { signToken, requireAuth } from '../middleware/auth.js';
+import { generateFifaSoulId } from '../services/identity.js';
 
 const router = Router();
 
@@ -11,7 +12,7 @@ function publicUser(u) {
 }
 
 router.post('/register', (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, psn_id, xbox_id, steam_id } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'نام، ایمیل و رمز عبور الزامی است.' });
   }
@@ -24,10 +25,31 @@ router.post('/register', (req, res) => {
     return res.status(409).json({ error: 'این ایمیل قبلاً ثبت‌نام کرده است.' });
   }
 
+  // Players without a console ID (PSN/XBOX/Steam) are marked as guests —
+  // they still get a full account, just without console-based identification,
+  // per spec: "کسانی که کد شناسایی ندارن... سایت میتونه بهشون یوزر مهمان بده".
+  const hasConsoleId = Boolean(psn_id || xbox_id || steam_id);
+
   const password_hash = bcrypt.hashSync(password, 10);
   const info = db
-    .prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)')
-    .run(name, email, password_hash);
+    .prepare(
+      `INSERT INTO users (name, email, password_hash, fifa_soul_id, is_guest, psn_id, xbox_id, steam_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      name,
+      email,
+      password_hash,
+      generateFifaSoulId(),
+      hasConsoleId ? 0 : 1,
+      psn_id || null,
+      xbox_id || null,
+      steam_id || null
+    );
+
+  if (!hasConsoleId) {
+    db.prepare('UPDATE users SET name = ? WHERE id = ?').run(`${name} (Guest#${info.lastInsertRowid})`, info.lastInsertRowid);
+  }
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
   const token = signToken(user);

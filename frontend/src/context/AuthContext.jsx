@@ -27,8 +27,8 @@ export function AuthProvider({ children }) {
     return data.user;
   }
 
-  async function register(name, email, password) {
-    const { data } = await api.post('/auth/register', { name, email, password });
+  async function register(name, email, password, consoleIds = {}) {
+    const { data } = await api.post('/auth/register', { name, email, password, ...consoleIds });
     localStorage.setItem('fifasoul_token', data.token);
     setUser(data.user);
     return data.user;

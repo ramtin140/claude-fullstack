@@ -16,6 +16,7 @@ import newsletterRoutes from './routes/newsletter.js';
 import h2hRoutes from './routes/h2h.js';
 import walletRoutes from './routes/wallet.js';
 import adminEconomyRoutes from './routes/admin-economy.js';
+import gameOptionsRoutes from './routes/game-options.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -41,6 +42,7 @@ app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/h2h', h2hRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/admin', adminEconomyRoutes);
+app.use('/api/game-options', gameOptionsRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'مسیر یافت نشد.' }));
 

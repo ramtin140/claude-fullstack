@@ -42,11 +42,35 @@ const newUserColumns = [
   ['season_points', 'INTEGER NOT NULL DEFAULT 0'],
   ["grade", "TEXT NOT NULL DEFAULT 'D'"],
   ['draws', 'INTEGER NOT NULL DEFAULT 0'],
+  ['fifa_soul_id', 'TEXT'],
+  ['is_guest', 'INTEGER NOT NULL DEFAULT 0'],
+  ['is_vip', 'INTEGER NOT NULL DEFAULT 0'],
+  ['psn_id', 'TEXT'],
+  ['xbox_id', 'TEXT'],
+  ['steam_id', 'TEXT'],
 ];
 for (const [name, definition] of newUserColumns) {
   try {
     db.exec(`ALTER TABLE users ADD COLUMN ${name} ${definition}`);
   } catch (err) {
     if (!/duplicate column/i.test(err.message)) throw err;
+  }
+}
+
+// Role model grew from plain member/admin into the spec's actual tiers
+// (مدیر ارشد / نویسنده / کارشناس مسابقات); carry any pre-existing admins
+// forward as the top tier so nobody is silently locked out after upgrading.
+db.exec(`UPDATE users SET role = 'senior_admin' WHERE role = 'admin'`);
+
+// Backfill a random fifa soul ID for any user that predates this feature.
+const usersMissingId = db.prepare('SELECT id FROM users WHERE fifa_soul_id IS NULL').all();
+if (usersMissingId.length) {
+  const setId = db.prepare('UPDATE users SET fifa_soul_id = ? WHERE id = ?');
+  for (const { id } of usersMissingId) {
+    let candidate;
+    do {
+      candidate = `FS-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    } while (db.prepare('SELECT 1 FROM users WHERE fifa_soul_id = ?').get(candidate));
+    setId.run(candidate, id);
   }
 }

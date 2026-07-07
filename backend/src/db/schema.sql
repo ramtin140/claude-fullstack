@@ -131,6 +131,19 @@ CREATE TABLE IF NOT EXISTS h2h_legs (
   UNIQUE(match_id, leg_number)
 );
 
+-- Admin-manageable dropdown options (console types, game versions) so the
+-- site owner can add/remove/rename choices without a code deploy.
+CREATE TABLE IF NOT EXISTS game_options (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL, -- 'console' | 'game_version'
+  value TEXT NOT NULL,
+  label TEXT NOT NULL,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(category, value)
+);
+
 CREATE TABLE IF NOT EXISTS season_archive (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

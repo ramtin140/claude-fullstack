@@ -21,6 +21,8 @@ import AdminTournaments from './pages/admin/AdminTournaments.jsx';
 import AdminMatches from './pages/admin/AdminMatches.jsx';
 import AdminNews from './pages/admin/AdminNews.jsx';
 import AdminUsers from './pages/admin/AdminUsers.jsx';
+import AdminGameOptions from './pages/admin/AdminGameOptions.jsx';
+import AdminExpertQueue from './pages/admin/AdminExpertQueue.jsx';
 
 export default function App() {
   return (
@@ -47,16 +49,60 @@ export default function App() {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute adminOnly>
+            <ProtectedRoute roles={['writer', 'match_expert']}>
               <AdminLayout />
             </ProtectedRoute>
           }
         >
           <Route index element={<AdminDashboard />} />
-          <Route path="tournaments" element={<AdminTournaments />} />
-          <Route path="matches" element={<AdminMatches />} />
-          <Route path="news" element={<AdminNews />} />
-          <Route path="users" element={<AdminUsers />} />
+          <Route
+            path="tournaments"
+            element={
+              <ProtectedRoute roles={[]}>
+                <AdminTournaments />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="matches"
+            element={
+              <ProtectedRoute roles={[]}>
+                <AdminMatches />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="news"
+            element={
+              <ProtectedRoute roles={['writer']}>
+                <AdminNews />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="users"
+            element={
+              <ProtectedRoute roles={[]}>
+                <AdminUsers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="game-options"
+            element={
+              <ProtectedRoute roles={[]}>
+                <AdminGameOptions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="expert-queue"
+            element={
+              <ProtectedRoute roles={['match_expert']}>
+                <AdminExpertQueue />
+              </ProtectedRoute>
+            }
+          />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

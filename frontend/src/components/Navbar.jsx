@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Menu, X, User, LogOut, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { isStaff } from './ProtectedRoute.jsx';
 import '../styles/layout.css';
 
 const links = [
@@ -37,11 +38,11 @@ export default function Navbar() {
           {user ? (
             <>
               <Link
-                to={user.role === 'admin' ? '/admin' : '/dashboard'}
+                to={isStaff(user) ? '/admin' : '/dashboard'}
                 className="user-chip"
                 title={user.name}
               >
-                {user.role === 'admin' ? <ShieldCheck size={16} /> : <User size={16} />}
+                {isStaff(user) ? <ShieldCheck size={16} /> : <User size={16} />}
                 {user.name}
               </Link>
               <button
