@@ -32,3 +32,21 @@ db.pragma('foreign_keys = ON');
 
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf-8');
 db.exec(schema);
+
+// CREATE TABLE IF NOT EXISTS above won't add new columns to a users table
+// that already existed before the ticket/XP economy was introduced, so those
+// additions are applied here as idempotent ALTER TABLEs instead.
+const newUserColumns = [
+  ['ticket_balance', 'INTEGER NOT NULL DEFAULT 0'],
+  ['xp', 'INTEGER NOT NULL DEFAULT 0'],
+  ['season_points', 'INTEGER NOT NULL DEFAULT 0'],
+  ["grade", "TEXT NOT NULL DEFAULT 'D'"],
+  ['draws', 'INTEGER NOT NULL DEFAULT 0'],
+];
+for (const [name, definition] of newUserColumns) {
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN ${name} ${definition}`);
+  } catch (err) {
+    if (!/duplicate column/i.test(err.message)) throw err;
+  }
+}

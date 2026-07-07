@@ -13,6 +13,9 @@ import newsRoutes from './routes/news.js';
 import statsRoutes from './routes/stats.js';
 import usersRoutes from './routes/users.js';
 import newsletterRoutes from './routes/newsletter.js';
+import h2hRoutes from './routes/h2h.js';
+import walletRoutes from './routes/wallet.js';
+import adminEconomyRoutes from './routes/admin-economy.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -35,6 +38,9 @@ app.use('/api/news', newsRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/h2h', h2hRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/admin', adminEconomyRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'مسیر یافت نشد.' }));
 

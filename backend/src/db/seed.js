@@ -7,19 +7,19 @@ if (userCount === 0) {
   console.log('Seeding database...');
 
   const insertUser = db.prepare(`
-    INSERT INTO users (name, email, password_hash, role, points, wins, losses)
-    VALUES (@name, @email, @password_hash, @role, @points, @wins, @losses)
+    INSERT INTO users (name, email, password_hash, role, points, wins, losses, ticket_balance, xp, season_points, grade)
+    VALUES (@name, @email, @password_hash, @role, @points, @wins, @losses, @ticket_balance, @xp, @season_points, @grade)
   `);
 
   const passwordHash = bcrypt.hashSync('password123', 10);
   const adminHash = bcrypt.hashSync('admin123', 10);
 
   const members = [
-    { name: 'Mamad Fifa', email: 'mamad@fifasoul.test', points: 980, wins: 41, losses: 6 },
-    { name: 'Hamid k2', email: 'hamid@fifasoul.test', points: 870, wins: 33, losses: 9 },
-    { name: 'Amin 32', email: 'amin@fifasoul.test', points: 810, wins: 30, losses: 11 },
-    { name: 'Navid game', email: 'navid@fifasoul.test', points: 790, wins: 28, losses: 10 },
-    { name: 'reza toyota', email: 'reza@fifasoul.test', points: 640, wins: 22, losses: 14 },
+    { name: 'Mamad Fifa', email: 'mamad@fifasoul.test', points: 980, wins: 41, losses: 6, season_points: 665, grade: 'A' },
+    { name: 'Hamid k2', email: 'hamid@fifasoul.test', points: 870, wins: 33, losses: 9, season_points: 490, grade: 'B' },
+    { name: 'Amin 32', email: 'amin@fifasoul.test', points: 810, wins: 30, losses: 11, season_points: 380, grade: 'C' },
+    { name: 'Navid game', email: 'navid@fifasoul.test', points: 790, wins: 28, losses: 10, season_points: 260, grade: 'D' },
+    { name: 'reza toyota', email: 'reza@fifasoul.test', points: 640, wins: 22, losses: 14, season_points: 140, grade: 'D' },
   ];
 
   const memberIds = {};
@@ -32,6 +32,10 @@ if (userCount === 0) {
       points: m.points,
       wins: m.wins,
       losses: m.losses,
+      ticket_balance: 10, // demo credit so h2h create/join flows can be tested end-to-end
+      xp: m.season_points,
+      season_points: m.season_points,
+      grade: m.grade,
     });
     memberIds[m.name] = info.lastInsertRowid;
   }
@@ -44,6 +48,10 @@ if (userCount === 0) {
     points: 0,
     wins: 0,
     losses: 0,
+    ticket_balance: 0,
+    xp: 0,
+    season_points: 0,
+    grade: 'D',
   });
 
   const insertTournament = db.prepare(`
@@ -159,4 +167,16 @@ if (userCount === 0) {
   console.log('Seed complete. Admin login: admin@fifasoul.test / admin123');
 } else {
   console.log('Database already has data, skipping seed.');
+}
+
+const gradeThresholdCount = db.prepare('SELECT COUNT(*) AS c FROM grade_thresholds').get().c;
+if (gradeThresholdCount === 0) {
+  const insertGrade = db.prepare(
+    'INSERT INTO grade_thresholds (grade, min_points, max_points) VALUES (?, ?, ?)'
+  );
+  insertGrade.run('D', 0, 299);
+  insertGrade.run('C', 300, 449);
+  insertGrade.run('B', 450, 599);
+  insertGrade.run('A', 600, null);
+  console.log('Seeded default grade thresholds (D/C/B/A).');
 }
