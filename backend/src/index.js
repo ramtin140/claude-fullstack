@@ -2,10 +2,12 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import { createServer } from 'node:http';
 
 import './db/index.js';
 import './db/seed.js';
 import { uploadsDir } from './middleware/upload.js';
+import { initRealtime } from './services/realtime.js';
 
 import authRoutes from './routes/auth.js';
 import tournamentRoutes from './routes/tournaments.js';
@@ -55,6 +57,9 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'خطای داخلی سرور.' });
 });
 
-app.listen(PORT, () => {
+const httpServer = createServer(app);
+initRealtime(httpServer);
+
+httpServer.listen(PORT, () => {
   console.log(`FIFA Soul API running on http://localhost:${PORT}`);
 });

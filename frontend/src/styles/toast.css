@@ -1,0 +1,50 @@
+.toast-stack {
+  position: fixed;
+  top: 84px;
+  left: 16px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 340px;
+}
+
+.toast {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font-size: 0.85rem;
+  color: var(--text-light);
+  animation: toast-in 0.2s ease-out;
+}
+
+.toast-success {
+  border-color: var(--gold);
+}
+
+.toast-warning {
+  border-color: var(--magenta);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.expert-badge {
+  background: var(--magenta);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  margin-right: 4px;
+  font-weight: 700;
+}

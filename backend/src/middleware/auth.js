@@ -12,6 +12,12 @@ export function signToken(user) {
   return jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 }
 
+// Shared with the websocket handshake (realtime.js), which has no Express
+// request/response to hang requireAuth's middleware shape off of.
+export function verifyToken(token) {
+  return jwt.verify(token, JWT_SECRET);
+}
+
 export function requireAuth(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;

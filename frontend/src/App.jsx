@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import ToastStack from './components/ToastStack.jsx';
 
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
@@ -19,6 +20,7 @@ import H2HCreate from './pages/H2HCreate.jsx';
 import H2HDetail from './pages/H2HDetail.jsx';
 import Wallet from './pages/Wallet.jsx';
 import PlayerSearch from './pages/PlayerSearch.jsx';
+import Profile from './pages/Profile.jsx';
 
 import AdminLayout from './pages/admin/AdminLayout.jsx';
 import AdminDashboard from './pages/admin/AdminDashboard.jsx';
@@ -34,6 +36,7 @@ export default function App() {
   return (
     <>
       <Navbar />
+      <ToastStack />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -75,6 +78,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />

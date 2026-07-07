@@ -7,9 +7,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
 const evidenceDir = path.join(uploadsDir, 'evidence');
 if (!fs.existsSync(evidenceDir)) fs.mkdirSync(evidenceDir, { recursive: true });
+const avatarDir = path.join(uploadsDir, 'avatars');
+if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir, { recursive: true });
 
 const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'application/pdf']);
+const ALLOWED_IMAGE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const MAX_SIZE_BYTES = 8 * 1024 * 1024; // 8MB
+const MAX_AVATAR_BYTES = 3 * 1024 * 1024; // 3MB
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, evidenceDir),
@@ -35,4 +39,28 @@ export const uploadEvidence = multer({
 
 export function publicEvidenceUrl(filename) {
   return `/uploads/evidence/${filename}`;
+}
+
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, avatarDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '';
+    const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
+    cb(null, unique);
+  },
+});
+
+export const uploadAvatar = multer({
+  storage: avatarStorage,
+  limits: { fileSize: MAX_AVATAR_BYTES },
+  fileFilter: (req, file, cb) => {
+    if (!ALLOWED_IMAGE_MIME.has(file.mimetype)) {
+      return cb(new Error('فقط فایل عکس (PNG/JPEG/WebP) مجاز است.'));
+    }
+    cb(null, true);
+  },
+}).single('avatar_file');
+
+export function publicAvatarUrl(filename) {
+  return `/uploads/avatars/${filename}`;
 }

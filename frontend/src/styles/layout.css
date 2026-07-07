@@ -84,6 +84,17 @@
   cursor: pointer;
 }
 
+.navbar-avatar-link {
+  padding: 6px;
+}
+
+.navbar-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 @media (max-width: 900px) {
   .nav-links {
     display: none;

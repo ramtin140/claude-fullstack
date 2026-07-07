@@ -14,6 +14,7 @@ export default function H2HCreate() {
     game_version: '',
     is_private: false,
     password: '',
+    time_limit_hours: 24,
   });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -107,6 +108,18 @@ export default function H2HCreate() {
               />
             </div>
           )}
+          <div className="form-field">
+            <label>فرجه زمانی برای ثبت نتیجه هر نیم‌فصل (ساعت)</label>
+            <input
+              type="number"
+              min={1}
+              value={form.time_limit_hours}
+              onChange={(e) => setForm({ ...form, time_limit_hours: e.target.value })}
+            />
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', margin: '4px 0 0' }}>
+              اگر تا پایان این مدت نتیجه ثبت نشود، طرف مقابل می‌تواند برد ۳-۰ را درخواست کند.
+            </p>
+          </div>
           {error && <p className="error-text">{error}</p>}
           <button className="btn btn-primary" disabled={loading}>
             {loading ? 'در حال ساخت...' : 'ساخت مسابقه'}

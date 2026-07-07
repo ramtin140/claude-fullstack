@@ -6,6 +6,7 @@ import { adjustWallet, getBalance } from '../services/wallet.js';
 import { addSeasonPoints, RESULT_POINTS } from '../services/grading.js';
 import { sendEmailNotification } from '../services/notify.js';
 import { uploadEvidence, publicEvidenceUrl } from '../middleware/upload.js';
+import { emitToUser, emitExpertQueueUpdate } from '../services/realtime.js';
 
 const router = Router();
 
@@ -16,8 +17,45 @@ function publicMatch(match) {
   return { ...rest, is_private: Boolean(rest.is_private), has_password: Boolean(password_hash) };
 }
 
+function getSetting(key, fallback) {
+  const row = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(key);
+  return row ? row.value : fallback;
+}
+
+// Attaches opponent name/avatar to each leg so the submit/confirm UI can show
+// "شما در برابر: [عکس] [نام]" instead of bare, easily-swapped score inputs.
+function withUserInfo(legs) {
+  if (legs.length === 0) return legs;
+  const ids = [...new Set(legs.flatMap((l) => [l.home_user_id, l.away_user_id]))];
+  const placeholders = ids.map(() => '?').join(',');
+  const users = db.prepare(`SELECT id, name, avatar_url FROM users WHERE id IN (${placeholders})`).all(...ids);
+  const byId = Object.fromEntries(users.map((u) => [u.id, u]));
+  return legs.map((leg) => ({
+    ...leg,
+    home_user_name: byId[leg.home_user_id]?.name || null,
+    home_user_avatar: byId[leg.home_user_id]?.avatar_url || null,
+    away_user_name: byId[leg.away_user_id]?.name || null,
+    away_user_avatar: byId[leg.away_user_id]?.avatar_url || null,
+  }));
+}
+
 function getLegs(matchId) {
-  return db.prepare('SELECT * FROM h2h_legs WHERE match_id = ? ORDER BY leg_number').all(matchId);
+  return withUserInfo(db.prepare('SELECT * FROM h2h_legs WHERE match_id = ? ORDER BY leg_number').all(matchId));
+}
+
+// Lazy "cron replacement": a forfeited leg sits in a grace period where the
+// losing side can dispute it; once forfeit_dispute_deadline passes with no
+// dispute, the 3-0 result becomes final. Checked whenever a match is viewed.
+function maybeFinalizeForfeits(matchId) {
+  const expired = db
+    .prepare(
+      `SELECT * FROM h2h_legs WHERE match_id = ? AND status = 'forfeited' AND forfeit_dispute_deadline IS NOT NULL AND forfeit_dispute_deadline <= datetime('now')`
+    )
+    .all(matchId);
+  for (const leg of expired) {
+    db.prepare(`UPDATE h2h_legs SET status = 'confirmed', resolved_at = datetime('now') WHERE id = ?`).run(leg.id);
+  }
+  if (expired.length) tryFinalizeMatch(matchId);
 }
 
 function getMatchOr404(id, res) {
@@ -94,6 +132,7 @@ function tryFinalizeMatch(matchId) {
         isDraw ? 'مسابقه شما با تساوی به پایان رسید.' : uid === winnerId ? 'تبریک! شما برنده مسابقه شدید.' : 'مسابقه شما به پایان رسید.'
       );
     }
+    emitToUser(uid, 'h2h:match_completed', { match_id: matchId, winner_id: winnerId, is_draw: isDraw });
   }
 }
 
@@ -115,11 +154,13 @@ router.get('/mine', requireAuth, (req, res) => {
 router.get('/:id', (req, res) => {
   const match = getMatchOr404(req.params.id, res);
   if (!match) return;
-  res.json({ match: publicMatch(match), legs: getLegs(match.id) });
+  maybeFinalizeForfeits(match.id);
+  const refreshed = db.prepare('SELECT * FROM h2h_matches WHERE id = ?').get(match.id);
+  res.json({ match: publicMatch(refreshed), legs: getLegs(match.id) });
 });
 
 router.post('/', requireAuth, (req, res) => {
-  const { stake_type = 'ticket', stake_amount = 1, console: consoleName, game_version, is_private, password, admin_notes } = req.body;
+  const { stake_type = 'ticket', stake_amount = 1, console: consoleName, game_version, is_private, password, admin_notes, time_limit_hours } = req.body;
 
   if (!['ticket', 'xp'].includes(stake_type)) {
     return res.status(400).json({ error: 'نوع شرط‌بندی نامعتبر است.' });
@@ -130,13 +171,16 @@ router.post('/', requireAuth, (req, res) => {
   if (is_private && !password) {
     return res.status(400).json({ error: 'برای مسابقه خصوصی وارد کردن رمز عبور الزامی است.' });
   }
+  if (time_limit_hours !== undefined && time_limit_hours !== null && time_limit_hours !== '' && (!Number.isInteger(Number(time_limit_hours)) || Number(time_limit_hours) < 1)) {
+    return res.status(400).json({ error: 'فرجه زمانی نامعتبر است.' });
+  }
 
   const passwordHash = is_private ? bcrypt.hashSync(password, 10) : null;
 
   const info = db
     .prepare(
-      `INSERT INTO h2h_matches (creator_id, stake_type, stake_amount, console, game_version, is_private, password_hash, admin_notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO h2h_matches (creator_id, stake_type, stake_amount, console, game_version, is_private, password_hash, admin_notes, time_limit_hours)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       req.user.id,
@@ -146,11 +190,36 @@ router.post('/', requireAuth, (req, res) => {
       game_version || null,
       is_private ? 1 : 0,
       passwordHash,
-      admin_notes || null
+      admin_notes || null,
+      time_limit_hours ? Number(time_limit_hours) : null
     );
 
   const match = db.prepare('SELECT * FROM h2h_matches WHERE id = ?').get(info.lastInsertRowid);
   res.status(201).json({ match: publicMatch(match) });
+});
+
+// Expert/admin override of the play-time-limit — can be set before or after
+// the match locks; if legs already exist their deadline is recomputed from
+// locked_at, matching "یا از سمت کارشناس یا مدت زمان انجام بازی".
+router.put('/:id/time-limit', requireAuth, requireMatchExpert, (req, res) => {
+  const match = getMatchOr404(req.params.id, res);
+  if (!match) return;
+
+  const hours = Number(req.body.time_limit_hours);
+  if (!Number.isInteger(hours) || hours < 1) {
+    return res.status(400).json({ error: 'فرجه زمانی نامعتبر است.' });
+  }
+
+  db.prepare('UPDATE h2h_matches SET time_limit_hours = ? WHERE id = ?').run(hours, match.id);
+
+  if (match.locked_at) {
+    db.prepare(
+      `UPDATE h2h_legs SET deadline_at = datetime(?, '+' || ? || ' hours') WHERE match_id = ? AND status = 'pending_submission'`
+    ).run(match.locked_at, hours, match.id);
+  }
+
+  const updated = db.prepare('SELECT * FROM h2h_matches WHERE id = ?').get(match.id);
+  res.json({ match: publicMatch(updated), legs: getLegs(match.id) });
 });
 
 // Joining locks the match immediately — like a reserved bus seat, once both
@@ -182,6 +251,8 @@ router.post('/:id/join', requireAuth, (req, res) => {
     }
   }
 
+  const timeLimitHours = match.time_limit_hours || Number(getSetting('h2h_default_time_limit_hours', '24'));
+
   const tx = db.transaction(() => {
     if (match.stake_type === 'ticket') {
       adjustWallet(match.creator_id, 'ticket', -match.stake_amount, 'match_stake', 'h2h_match', match.id);
@@ -189,15 +260,17 @@ router.post('/:id/join', requireAuth, (req, res) => {
     }
 
     db.prepare(
-      `UPDATE h2h_matches SET opponent_id = ?, status = 'locked', locked_at = datetime('now') WHERE id = ?`
-    ).run(req.user.id, match.id);
+      `UPDATE h2h_matches SET opponent_id = ?, status = 'locked', locked_at = datetime('now'), time_limit_hours = COALESCE(time_limit_hours, ?) WHERE id = ?`
+    ).run(req.user.id, timeLimitHours, match.id);
 
     db.prepare(
-      `INSERT INTO h2h_legs (match_id, leg_number, home_user_id, away_user_id) VALUES (?, 1, ?, ?)`
-    ).run(match.id, match.creator_id, req.user.id);
+      `INSERT INTO h2h_legs (match_id, leg_number, home_user_id, away_user_id, deadline_at)
+       VALUES (?, 1, ?, ?, datetime('now', '+' || ? || ' hours'))`
+    ).run(match.id, match.creator_id, req.user.id, timeLimitHours);
     db.prepare(
-      `INSERT INTO h2h_legs (match_id, leg_number, home_user_id, away_user_id) VALUES (?, 2, ?, ?)`
-    ).run(match.id, req.user.id, match.creator_id);
+      `INSERT INTO h2h_legs (match_id, leg_number, home_user_id, away_user_id, deadline_at)
+       VALUES (?, 2, ?, ?, datetime('now', '+' || ? || ' hours'))`
+    ).run(match.id, req.user.id, match.creator_id, timeLimitHours);
   });
 
   try {
@@ -214,6 +287,7 @@ router.post('/:id/join', requireAuth, (req, res) => {
     if (email) {
       sendEmailNotification(email, 'مسابقه شما قفل شد', 'حریف شما جوین شد و مسابقه قفل شده است. اکنون می‌توانید بازی را شروع کنید.');
     }
+    emitToUser(uid, 'h2h:match_locked', { match_id: match.id });
   }
 
   const updated = db.prepare('SELECT * FROM h2h_matches WHERE id = ?').get(match.id);
@@ -257,6 +331,7 @@ router.post('/:id/legs/:legNumber/submit', requireAuth, (req, res) => {
   if (email) {
     sendEmailNotification(email, 'نتیجه بازی برای تایید شما ثبت شد', `نتیجه ثبت‌شده: ${home_score} - ${away_score}. لطفاً تایید یا اعتراض خود را ثبت کنید.`);
   }
+  emitToUser(otherUserId, 'h2h:leg_submitted', { match_id: leg.match_id, leg_number: leg.leg_number, home_score, away_score });
 
   res.json({ leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id) });
 });
@@ -279,6 +354,8 @@ router.post('/:id/legs/:legNumber/confirm', requireAuth, (req, res) => {
     `UPDATE h2h_legs SET final_home_score = submitted_home_score, final_away_score = submitted_away_score,
      confirmed_by_id = ?, status = 'confirmed', resolved_at = datetime('now') WHERE id = ?`
   ).run(req.user.id, leg.id);
+
+  emitToUser(leg.submitted_by_id, 'h2h:leg_confirmed', { match_id: leg.match_id, leg_number: leg.leg_number });
 
   tryFinalizeMatch(leg.match_id);
 
@@ -323,13 +400,114 @@ router.post('/:id/legs/:legNumber/dispute', requireAuth, (req, res) => {
        status = 'expert_review' WHERE id = ?`
     ).run(home_score, away_score, evidence, req.user.id, leg.id);
 
+    emitToUser(leg.submitted_by_id, 'h2h:disputed', { match_id: leg.match_id, leg_number: leg.leg_number });
+    emitExpertQueueUpdate();
+
+    res.json({ leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id) });
+  });
+});
+
+// "اگر طرف ثبت نکرد نتیجه ۳ بر صفر بشه" — once the play-time deadline has
+// passed with no submission, either participant can claim a 3-0 walkover.
+// The claimed result is not final immediately: it opens a short grace period
+// (forfeit_dispute_deadline) during which the losing side can dispute it —
+// see /dispute-forfeit below. maybeFinalizeForfeits() promotes it to a real
+// confirmed result once that window lapses without a dispute.
+router.post('/:id/legs/:legNumber/claim-forfeit', requireAuth, (req, res) => {
+  const leg = getLegOr404(req.params.id, req.params.legNumber, res);
+  if (!leg) return;
+
+  if (![leg.home_user_id, leg.away_user_id].includes(req.user.id)) {
+    return res.status(403).json({ error: 'شما در این مسابقه شرکت ندارید.' });
+  }
+  if (leg.status !== 'pending_submission') {
+    return res.status(409).json({ error: 'این نیم‌فصل در وضعیت قابل درخواست فرجه نیست.' });
+  }
+  if (!leg.deadline_at || leg.deadline_at > db.prepare("SELECT datetime('now') AS n").get().n) {
+    return res.status(409).json({ error: 'فرجه زمانی این نیم‌فصل هنوز تمام نشده است.' });
+  }
+
+  const claimantIsHome = req.user.id === leg.home_user_id;
+  const disputeWindowHours = Number(getSetting('h2h_forfeit_dispute_window_hours', '1'));
+
+  db.prepare(
+    `UPDATE h2h_legs SET final_home_score = ?, final_away_score = ?, status = 'forfeited',
+     forfeit_dispute_deadline = datetime('now', '+' || ? || ' hours') WHERE id = ?`
+  ).run(claimantIsHome ? 3 : 0, claimantIsHome ? 0 : 3, disputeWindowHours, leg.id);
+
+  const loserId = claimantIsHome ? leg.away_user_id : leg.home_user_id;
+  const email = userEmail(loserId);
+  if (email) {
+    sendEmailNotification(
+      email,
+      'نتیجه فرجه‌ای ثبت شد',
+      `چون نتیجه در فرجه تعیین‌شده ثبت نشد، نتیجه ۳-۰ به نفع حریف ثبت شد. تا ${disputeWindowHours} ساعت فرصت اعتراض دارید.`
+    );
+  }
+  emitToUser(loserId, 'h2h:forfeit_claimed', { match_id: leg.match_id, leg_number: leg.leg_number });
+
+  res.json({ leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id) });
+});
+
+// Only the forfeited (losing) side may dispute, and only within the grace
+// window — escalates into the same expert_review queue as a normal dispute.
+router.post('/:id/legs/:legNumber/dispute-forfeit', requireAuth, (req, res) => {
+  uploadEvidence(req, res, (uploadErr) => {
+    if (uploadErr) return res.status(400).json({ error: uploadErr.message });
+
+    const leg = getLegOr404(req.params.id, req.params.legNumber, res);
+    if (!leg) return;
+
+    if (![leg.home_user_id, leg.away_user_id].includes(req.user.id)) {
+      return res.status(403).json({ error: 'شما در این مسابقه شرکت ندارید.' });
+    }
+    if (leg.status !== 'forfeited') {
+      return res.status(409).json({ error: 'این نیم‌فصل نتیجه فرجه‌ای ندارد.' });
+    }
+    const forfeitWinnerId = leg.final_home_score === 3 ? leg.home_user_id : leg.away_user_id;
+    if (req.user.id === forfeitWinnerId) {
+      return res.status(400).json({ error: 'فقط طرف بازنده فرجه می‌تواند اعتراض کند.' });
+    }
+    if (!leg.forfeit_dispute_deadline || leg.forfeit_dispute_deadline <= db.prepare("SELECT datetime('now') AS n").get().n) {
+      return res.status(409).json({ error: 'فرصت اعتراض به نتیجه فرجه‌ای تمام شده است.' });
+    }
+
+    const home_score = req.body.home_score !== undefined ? Number(req.body.home_score) : leg.final_away_score;
+    const away_score = req.body.away_score !== undefined ? Number(req.body.away_score) : leg.final_home_score;
+
+    const noteParts = ['اعتراض به نتیجه فرجه‌ای'];
+    if (req.body.evidence) noteParts.push(req.body.evidence);
+    if (req.file) noteParts.push(publicEvidenceUrl(req.file.filename));
+    const evidence = noteParts.join(' | ');
+
+    db.prepare(
+      `UPDATE h2h_legs SET dispute_home_score = ?, dispute_away_score = ?, dispute_evidence = ?, dispute_by_id = ?,
+       status = 'expert_review' WHERE id = ?`
+    ).run(home_score, away_score, evidence, req.user.id, leg.id);
+
+    emitExpertQueueUpdate();
+
     res.json({ leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id) });
   });
 });
 
 router.get('/admin/expert-queue', requireAuth, requireMatchExpert, (req, res) => {
   const rows = db.prepare("SELECT * FROM h2h_legs WHERE status = 'expert_review' ORDER BY created_at").all();
-  res.json({ legs: rows });
+  res.json({ legs: withUserInfo(rows) });
+});
+
+// "کارشناسی میتونه چند قسمت داشته باشه یا پشت سر هم" — every decision is
+// appended to h2h_expert_reviews so re-reviews or a second expert's opinion
+// are all visible in the trail, even though the leg's own final_* fields
+// (and thus the payout) only reflect the latest decision.
+router.get('/legs/:legId/reviews', requireAuth, requireMatchExpert, (req, res) => {
+  const rows = db
+    .prepare(
+      `SELECT r.*, u.name AS expert_name FROM h2h_expert_reviews r
+       JOIN users u ON u.id = r.expert_id WHERE r.leg_id = ? ORDER BY r.created_at`
+    )
+    .all(req.params.legId);
+  res.json({ reviews: rows });
 });
 
 router.post('/:id/legs/:legNumber/expert-resolve', requireAuth, requireMatchExpert, (req, res) => {
@@ -340,7 +518,7 @@ router.post('/:id/legs/:legNumber/expert-resolve', requireAuth, requireMatchExpe
     return res.status(409).json({ error: 'این نیم‌فصل در صف بررسی کارشناسی نیست.' });
   }
 
-  const { home_score, away_score } = req.body;
+  const { home_score, away_score, notes } = req.body;
   if (!Number.isInteger(home_score) || !Number.isInteger(away_score)) {
     return res.status(400).json({ error: 'نتیجه نهایی نامعتبر است.' });
   }
@@ -350,6 +528,12 @@ router.post('/:id/legs/:legNumber/expert-resolve', requireAuth, requireMatchExpe
      status = 'expert_resolved', resolved_at = datetime('now') WHERE id = ?`
   ).run(home_score, away_score, req.user.id, leg.id);
 
+  db.prepare(
+    `INSERT INTO h2h_expert_reviews (leg_id, expert_id, home_score, away_score, notes) VALUES (?, ?, ?, ?, ?)`
+  ).run(leg.id, req.user.id, home_score, away_score, notes || null);
+
+  emitExpertQueueUpdate();
+
   tryFinalizeMatch(leg.match_id);
 
   for (const uid of [leg.home_user_id, leg.away_user_id]) {
@@ -357,6 +541,7 @@ router.post('/:id/legs/:legNumber/expert-resolve', requireAuth, requireMatchExpe
     if (email) {
       sendEmailNotification(email, 'نتیجه توسط کارشناس بررسی و ثبت شد', `نتیجه نهایی: ${home_score} - ${away_score}`);
     }
+    emitToUser(uid, 'h2h:expert_resolved', { match_id: leg.match_id, leg_number: leg.leg_number, home_score, away_score });
   }
 
   res.json({

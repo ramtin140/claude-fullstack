@@ -4,13 +4,16 @@ import { BrowserRouter } from 'react-router-dom';
 import '@fontsource-variable/vazirmatn';
 import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
+import { RealtimeProvider } from './context/RealtimeContext.jsx';
 import './styles/theme.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <RealtimeProvider>
+          <App />
+        </RealtimeProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>

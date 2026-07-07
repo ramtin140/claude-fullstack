@@ -173,3 +173,17 @@ CREATE TABLE IF NOT EXISTS challenges (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   resolved_at TEXT
 );
+
+-- Sequential/multi-part expert review history for a disputed or forfeited leg
+-- ("کارشناسی میتونه چند قسمت داشته باشه یا پشت سر هم") — every expert
+-- decision is appended here so the review trail is auditable even when more
+-- than one expert opinion happens over time.
+CREATE TABLE IF NOT EXISTS h2h_expert_reviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  leg_id INTEGER NOT NULL REFERENCES h2h_legs(id) ON DELETE CASCADE,
+  expert_id INTEGER NOT NULL REFERENCES users(id),
+  home_score INTEGER NOT NULL,
+  away_score INTEGER NOT NULL,
+  notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

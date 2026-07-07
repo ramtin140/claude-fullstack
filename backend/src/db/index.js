@@ -58,6 +58,18 @@ addColumnsIfMissing('users', [
   ['psn_id', 'TEXT'],
   ['xbox_id', 'TEXT'],
   ['steam_id', 'TEXT'],
+  ['avatar_url', 'TEXT'],
+  ['iban', 'TEXT'],
+  ['card_number', 'TEXT'],
+]);
+
+addColumnsIfMissing('h2h_matches', [
+  ['time_limit_hours', 'INTEGER'],
+]);
+
+addColumnsIfMissing('h2h_legs', [
+  ['deadline_at', 'TEXT'],
+  ['forfeit_dispute_deadline', 'TEXT'],
 ]);
 
 addColumnsIfMissing('tournaments', [

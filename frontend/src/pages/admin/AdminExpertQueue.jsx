@@ -25,6 +25,7 @@ export default function AdminExpertQueue() {
       await api.post(`/h2h/${leg.match_id}/legs/${leg.leg_number}/expert-resolve`, {
         home_score: Number(score.home),
         away_score: Number(score.away),
+        notes: score.notes || null,
       });
       load();
     } catch (err) {
@@ -49,6 +50,9 @@ export default function AdminExpertQueue() {
               <h3 style={{ marginTop: 0, color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Gavel size={18} /> مسابقه #{leg.match_id} — نیم‌فصل {leg.leg_number}
               </h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                {leg.home_user_name} در برابر {leg.away_user_name}
+              </p>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                 نتیجه ثبت‌شده اولیه: <b>{leg.submitted_home_score} - {leg.submitted_away_score}</b> (توسط کاربر #{leg.submitted_by_id})
               </p>
@@ -77,6 +81,12 @@ export default function AdminExpertQueue() {
                   ثبت نتیجه نهایی
                 </button>
               </div>
+              <textarea
+                rows={2}
+                placeholder="یادداشت کارشناسی (اختیاری) — در تاریخچه بررسی ثبت می‌شود"
+                style={{ width: '100%', marginTop: 10, padding: 8, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
+                onChange={(e) => setScores({ ...scores, [leg.id]: { ...scores[leg.id], notes: e.target.value } })}
+              />
             </div>
           ))}
         </div>

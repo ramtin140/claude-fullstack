@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Trophy, Gavel } from 'lucide-react';
-import { api } from '../api/client.js';
+import { Trophy, Gavel, User, Clock, AlertTriangle } from 'lucide-react';
+import { api, assetUrl } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { hasStaffAccess } from '../components/ProtectedRoute.jsx';
 import '../styles/h2h.css';
 import '../styles/pages.css';
 
@@ -12,9 +13,41 @@ const legStatusLabel = {
   confirmed: 'تایید شده',
   expert_review: 'در حال بررسی کارشناسی',
   expert_resolved: 'توسط کارشناس نهایی شد',
+  forfeited: 'نتیجه فرجه‌ای (۳-۰)',
 };
 
-function LegCard({ leg, index, userId, onSubmit, onConfirm, onDispute }) {
+// SQLite's datetime('now') stores UTC as "YYYY-MM-DD HH:MM:SS" with no zone
+// suffix — Date can't parse that reliably across browsers without this.
+function parseUtc(sqliteDatetime) {
+  if (!sqliteDatetime) return null;
+  return new Date(sqliteDatetime.replace(' ', 'T') + 'Z');
+}
+
+function formatRemaining(deadline) {
+  const ms = deadline - Date.now();
+  if (ms <= 0) return null;
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
+  return `${hours} ساعت و ${minutes} دقیقه`;
+}
+
+function OpponentChip({ name, avatar, label }) {
+  return (
+    <div className="opponent-chip">
+      <span style={{ color: 'var(--text-muted)' }}>{label}</span>
+      {avatar ? (
+        <img src={assetUrl(avatar)} alt="" />
+      ) : (
+        <span className="opponent-avatar-placeholder">
+          <User size={14} />
+        </span>
+      )}
+      <strong>{name || 'حریف'}</strong>
+    </div>
+  );
+}
+
+function LegCard({ leg, index, userId, onSubmit, onConfirm, onDispute, onClaimForfeit, onDisputeForfeit }) {
   const [homeScore, setHomeScore] = useState('');
   const [awayScore, setAwayScore] = useState('');
   const [disputeMode, setDisputeMode] = useState(false);
@@ -22,9 +55,26 @@ function LegCard({ leg, index, userId, onSubmit, onConfirm, onDispute }) {
   const [disputeAway, setDisputeAway] = useState('');
   const [evidenceText, setEvidenceText] = useState('');
   const [evidenceFile, setEvidenceFile] = useState(null);
+  const [forfeitDisputeMode, setForfeitDisputeMode] = useState(false);
   const [error, setError] = useState(null);
+  const [, forceTick] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => forceTick((n) => n + 1), 30000);
+    return () => clearInterval(t);
+  }, []);
 
   const isParticipant = userId === leg.home_user_id || userId === leg.away_user_id;
+  const isHome = userId === leg.home_user_id;
+  const opponentName = isHome ? leg.away_user_name : leg.home_user_name;
+  const opponentAvatar = isHome ? leg.away_user_avatar : leg.home_user_avatar;
+
+  const deadline = parseUtc(leg.deadline_at);
+  const deadlinePassed = deadline && Date.now() >= deadline.getTime();
+  const forfeitDeadline = parseUtc(leg.forfeit_dispute_deadline);
+  const forfeitWindowOpen = forfeitDeadline && Date.now() < forfeitDeadline.getTime();
+  const forfeitWinnerId = leg.final_home_score === 3 ? leg.home_user_id : leg.away_user_id;
+  const isForfeitLoser = isParticipant && userId !== forfeitWinnerId;
 
   return (
     <div className="card leg-card">
@@ -33,7 +83,65 @@ function LegCard({ leg, index, userId, onSubmit, onConfirm, onDispute }) {
         <span className="badge badge-waiting">{legStatusLabel[leg.status]}</span>
       </div>
 
-      {['confirmed', 'expert_resolved'].includes(leg.status) ? (
+      {isParticipant && ['pending_submission', 'pending_confirmation'].includes(leg.status) && (
+        <OpponentChip name={opponentName} avatar={opponentAvatar} label="شما در برابر:" />
+      )}
+
+      {leg.status === 'forfeited' ? (
+        <div>
+          <div className="leg-score-row">
+            <span>{leg.final_home_score}</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>-</span>
+            <span>{leg.final_away_score}</span>
+          </div>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>
+            <AlertTriangle size={13} style={{ verticalAlign: 'middle' }} /> نتیجه به دلیل عدم ثبت به موقع، فرجه‌ای اعمال شد.
+          </p>
+          {isForfeitLoser && forfeitWindowOpen && !forfeitDisputeMode && (
+            <button className="btn btn-magenta" style={{ width: '100%' }} onClick={() => setForfeitDisputeMode(true)}>
+              اعتراض به نتیجه فرجه‌ای ({formatRemaining(forfeitDeadline)} فرصت باقی‌مانده)
+            </button>
+          )}
+          {isForfeitLoser && forfeitWindowOpen && forfeitDisputeMode && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setError(null);
+                onDisputeForfeit(leg.leg_number, evidenceText, evidenceFile).catch((err) =>
+                  setError(err.response?.data?.error || 'خطا در ثبت اعتراض')
+                );
+              }}
+            >
+              <div className="form-field">
+                <label>توضیحات اعتراض</label>
+                <textarea rows={2} value={evidenceText} onChange={(e) => setEvidenceText(e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label>عکس مستندات (اختیاری)</label>
+                <input
+                  className="evidence-file-input"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,application/pdf"
+                  onChange={(e) => setEvidenceFile(e.target.files[0] || null)}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setForfeitDisputeMode(false)}>
+                  انصراف
+                </button>
+                <button type="submit" className="btn btn-magenta" style={{ flex: 1 }}>
+                  ثبت اعتراض
+                </button>
+              </div>
+            </form>
+          )}
+          {isForfeitLoser && !forfeitWindowOpen && (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center' }}>
+              فرصت اعتراض به پایان رسیده است.
+            </p>
+          )}
+        </div>
+      ) : ['confirmed', 'expert_resolved'].includes(leg.status) ? (
         <div className="leg-score-row">
           <span>{leg.final_home_score}</span>
           <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>-</span>
@@ -50,24 +158,42 @@ function LegCard({ leg, index, userId, onSubmit, onConfirm, onDispute }) {
           {leg.dispute_home_score}-{leg.dispute_away_score}
         </p>
       ) : leg.status === 'pending_submission' && isParticipant ? (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setError(null);
-            onSubmit(leg.leg_number, Number(homeScore), Number(awayScore)).catch((err) =>
-              setError(err.response?.data?.error || 'خطا در ثبت نتیجه')
-            );
-          }}
-        >
-          <div className="leg-score-row">
-            <input type="number" min={0} required value={homeScore} onChange={(e) => setHomeScore(e.target.value)} />
-            <span>-</span>
-            <input type="number" min={0} required value={awayScore} onChange={(e) => setAwayScore(e.target.value)} />
-          </div>
-          <button className="btn btn-primary" type="submit" style={{ width: '100%' }}>
-            ثبت نتیجه
-          </button>
-        </form>
+        <div>
+          {deadline && (
+            <p style={{ color: deadlinePassed ? 'var(--magenta)' : 'var(--text-muted)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Clock size={13} />
+              {deadlinePassed ? 'فرجه زمانی ثبت نتیجه تمام شده است.' : `فرجه باقی‌مانده: ${formatRemaining(deadline)}`}
+            </p>
+          )}
+          {deadlinePassed ? (
+            <button
+              className="btn btn-magenta"
+              style={{ width: '100%' }}
+              onClick={() => onClaimForfeit(leg.leg_number).catch((err) => setError(err.response?.data?.error || 'خطا در درخواست فرجه'))}
+            >
+              درخواست نتیجه ۳-۰ به نفع خودم (فرجه تمام شد)
+            </button>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setError(null);
+                onSubmit(leg.leg_number, Number(homeScore), Number(awayScore)).catch((err) =>
+                  setError(err.response?.data?.error || 'خطا در ثبت نتیجه')
+                );
+              }}
+            >
+              <div className="leg-score-row">
+                <input type="number" min={0} required value={homeScore} onChange={(e) => setHomeScore(e.target.value)} />
+                <span>-</span>
+                <input type="number" min={0} required value={awayScore} onChange={(e) => setAwayScore(e.target.value)} />
+              </div>
+              <button className="btn btn-primary" type="submit" style={{ width: '100%' }}>
+                ثبت نتیجه
+              </button>
+            </form>
+          )}
+        </div>
       ) : leg.status === 'pending_confirmation' && isParticipant && leg.submitted_by_id !== userId ? (
         <div>
           <p style={{ textAlign: 'center', marginBottom: 12 }}>
@@ -138,6 +264,27 @@ function LegCard({ leg, index, userId, onSubmit, onConfirm, onDispute }) {
   );
 }
 
+function TimeLimitControl({ match, onUpdate }) {
+  const [hours, setHours] = useState(match.time_limit_hours || 24);
+
+  return (
+    <div className="card" style={{ padding: 16, marginBottom: 24, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+      <Gavel size={16} style={{ color: 'var(--gold)' }} />
+      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>تنظیم فرجه زمانی کارشناسی (ساعت):</span>
+      <input
+        type="number"
+        min={1}
+        value={hours}
+        onChange={(e) => setHours(e.target.value)}
+        style={{ width: 90, padding: 8, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
+      />
+      <button className="btn btn-outline" style={{ padding: '6px 16px' }} onClick={() => onUpdate(hours)}>
+        اعمال
+      </button>
+    </div>
+  );
+}
+
 export default function H2HDetail() {
   const { id } = useParams();
   const { user, refreshUser } = useAuth();
@@ -193,6 +340,32 @@ export default function H2HDetail() {
     return data;
   }
 
+  async function claimForfeit(legNumber) {
+    const { data } = await api.post(`/h2h/${id}/legs/${legNumber}/claim-forfeit`);
+    load();
+    return data;
+  }
+
+  async function disputeForfeit(legNumber, evidenceText, file) {
+    const formData = new FormData();
+    if (evidenceText) formData.append('evidence', evidenceText);
+    if (file) formData.append('evidence_file', file);
+    const { data } = await api.post(`/h2h/${id}/legs/${legNumber}/dispute-forfeit`, formData);
+    load();
+    return data;
+  }
+
+  async function updateTimeLimit(hours) {
+    setError(null);
+    try {
+      await api.put(`/h2h/${id}/time-limit`, { time_limit_hours: Number(hours) });
+      setMessage('فرجه زمانی به‌روزرسانی شد.');
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'خطا در تنظیم فرجه زمانی');
+    }
+  }
+
   if (!match) return <div className="empty-state" style={{ padding: 60 }}>در حال بارگذاری...</div>;
 
   return (
@@ -208,6 +381,10 @@ export default function H2HDetail() {
       </div>
 
       <div className="container detail-body">
+        {hasStaffAccess(user, ['senior_admin', 'match_expert']) && match.status === 'locked' && (
+          <TimeLimitControl match={match} onUpdate={updateTimeLimit} />
+        )}
+
         {match.status === 'completed' && (
           <div className="winner-banner">
             <Trophy size={20} style={{ verticalAlign: 'middle', marginLeft: 8 }} />
@@ -250,6 +427,8 @@ export default function H2HDetail() {
                 onSubmit={submitLeg}
                 onConfirm={confirmLeg}
                 onDispute={disputeLeg}
+                onClaimForfeit={claimForfeit}
+                onDisputeForfeit={disputeForfeit}
               />
             ))}
           </div>

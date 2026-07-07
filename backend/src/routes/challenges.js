@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../db/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { sendEmailNotification } from '../services/notify.js';
+import { emitToUser } from '../services/realtime.js';
 
 const router = Router();
 
@@ -50,7 +51,11 @@ router.post('/', requireAuth, (req, res) => {
     sendEmailNotification(target.email, 'چالش جدید دریافت کردید', 'یک بازیکن شما را به مسابقه رو-در-رو دعوت کرده است.');
   }
 
-  res.status(201).json({ challenge: db.prepare('SELECT * FROM challenges WHERE id = ?').get(info.lastInsertRowid) });
+  const challenge = db.prepare('SELECT * FROM challenges WHERE id = ?').get(info.lastInsertRowid);
+  const fromUser = db.prepare('SELECT name FROM users WHERE id = ?').get(req.user.id);
+  emitToUser(to_user_id, 'challenge:new', { challenge, from_user_name: fromUser?.name });
+
+  res.status(201).json({ challenge });
 });
 
 // Accepting creates an already-locked (free/XP-stake) h2h match directly —
@@ -91,6 +96,7 @@ router.post('/:id/accept', requireAuth, (req, res) => {
 
   const email = userEmail(challenge.from_user_id);
   if (email) sendEmailNotification(email, 'چالش شما پذیرفته شد', 'حریف چالش شما را پذیرفت و مسابقه شروع شد.');
+  emitToUser(challenge.from_user_id, 'challenge:accepted', { challenge_id: challenge.id, h2h_match_id: matchId });
 
   res.json({ challenge: db.prepare('SELECT * FROM challenges WHERE id = ?').get(challenge.id), h2h_match_id: matchId });
 });
@@ -106,6 +112,7 @@ router.post('/:id/decline', requireAuth, (req, res) => {
   }
 
   db.prepare(`UPDATE challenges SET status = 'declined', resolved_at = datetime('now') WHERE id = ?`).run(challenge.id);
+  emitToUser(challenge.from_user_id, 'challenge:declined', { challenge_id: challenge.id });
   res.json({ challenge: db.prepare('SELECT * FROM challenges WHERE id = ?').get(challenge.id) });
 });
 
