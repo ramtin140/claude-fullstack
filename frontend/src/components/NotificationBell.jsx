@@ -4,7 +4,10 @@ import { Bell } from 'lucide-react';
 import { useRealtime } from '../context/RealtimeContext.jsx';
 import '../styles/toast.css';
 
-function timeAgo(ts) {
+// SQLite's datetime('now') stores UTC as "YYYY-MM-DD HH:MM:SS" with no zone
+// suffix — Date can't parse that reliably across browsers without this.
+function timeAgo(sqliteDatetime) {
+  const ts = new Date(sqliteDatetime.replace(' ', 'T') + 'Z').getTime();
   const seconds = Math.floor((Date.now() - ts) / 1000);
   if (seconds < 60) return 'همین الان';
   const minutes = Math.floor(seconds / 60);
@@ -58,7 +61,7 @@ export default function NotificationBell() {
                 }}
               >
                 <span className="notif-message">{n.message}</span>
-                <span className="notif-time">{timeAgo(n.at)}</span>
+                <span className="notif-time">{timeAgo(n.created_at)}</span>
               </button>
             ))
           )}

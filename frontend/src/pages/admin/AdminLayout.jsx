@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Trophy, Swords, Newspaper, Users, Sliders, Gavel, DollarSign } from 'lucide-react';
+import { LayoutDashboard, Trophy, Swords, Newspaper, Users, Sliders, Gavel, DollarSign, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { hasStaffAccess } from '../../components/ProtectedRoute.jsx';
 import '../../styles/admin.css';
@@ -13,6 +13,7 @@ const links = [
   { to: '/admin/game-options', label: 'گزینه‌های بازی', icon: Sliders, roles: ['senior_admin'] },
   { to: '/admin/expert-queue', label: 'صف کارشناسی', icon: Gavel, roles: ['senior_admin', 'match_expert'] },
   { to: '/admin/economy', label: 'اقتصاد و گریدبندی', icon: DollarSign, roles: ['senior_admin'] },
+  { to: '/admin/support', label: 'تیکت‌های پشتیبانی', icon: LifeBuoy, roles: ['senior_admin', 'writer'] },
 ];
 
 export default function AdminLayout() {

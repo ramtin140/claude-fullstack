@@ -5,6 +5,7 @@ import '../../styles/admin.css';
 export default function AdminEconomy() {
   const [thresholds, setThresholds] = useState([]);
   const [vipThreshold, setVipThreshold] = useState(500);
+  const [messagingEnabled, setMessagingEnabled] = useState(true);
   const [archive, setArchive] = useState([]);
   const [walletForm, setWalletForm] = useState({ userId: '', currency: 'ticket', amount: 1, reason: 'admin_adjustment' });
   const [seasonName, setSeasonName] = useState('');
@@ -14,6 +15,7 @@ export default function AdminEconomy() {
   function load() {
     api.get('/admin/grade-thresholds').then(({ data }) => setThresholds(data.thresholds));
     api.get('/admin/vip-threshold').then(({ data }) => setVipThreshold(data.threshold));
+    api.get('/admin/messaging-enabled').then(({ data }) => setMessagingEnabled(data.messaging_enabled));
     api.get('/admin/season/archive').then(({ data }) => setArchive(data.archive));
   }
 
@@ -42,6 +44,18 @@ export default function AdminEconomy() {
       setMessage('آستانه اکسپرینس وی‌آی‌پی ذخیره شد.');
     } catch (err) {
       setError(err.response?.data?.error || 'خطا در ذخیره‌سازی');
+    }
+  }
+
+  async function toggleMessaging() {
+    setError(null);
+    setMessage(null);
+    try {
+      const { data } = await api.put('/admin/messaging-enabled', { messaging_enabled: !messagingEnabled });
+      setMessagingEnabled(data.messaging_enabled);
+      setMessage(data.messaging_enabled ? 'پیام‌رسانی بین کاربران فعال شد.' : 'پیام‌رسانی بین کاربران غیرفعال شد.');
+    } catch (err) {
+      setError(err.response?.data?.error || 'خطا در تغییر وضعیت پیام‌رسانی');
     }
   }
 
@@ -99,6 +113,18 @@ export default function AdminEconomy() {
             ذخیره
           </button>
         </div>
+      </div>
+
+      <div className="card" style={{ padding: 20, marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <h3 style={{ marginTop: 0, marginBottom: 4, color: 'var(--gold)' }}>پیام‌رسانی بین کاربران</h3>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            در صورت غیرفعال بودن، کاربران نمی‌توانند از طریق جستجوی کاربران به هم پیام بدهند.
+          </p>
+        </div>
+        <button className={`btn ${messagingEnabled ? 'btn-magenta' : 'btn-primary'}`} onClick={toggleMessaging}>
+          {messagingEnabled ? 'غیرفعال کردن' : 'فعال کردن'}
+        </button>
       </div>
 
       <div className="card" style={{ overflowX: 'auto', marginBottom: 24 }}>

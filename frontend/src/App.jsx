@@ -21,6 +21,11 @@ import H2HDetail from './pages/H2HDetail.jsx';
 import Wallet from './pages/Wallet.jsx';
 import PlayerSearch from './pages/PlayerSearch.jsx';
 import Profile from './pages/Profile.jsx';
+import PublicProfile from './pages/PublicProfile.jsx';
+import MessagesInbox from './pages/MessagesInbox.jsx';
+import MessageThread from './pages/MessageThread.jsx';
+import SupportPage from './pages/SupportPage.jsx';
+import SupportDetail from './pages/SupportDetail.jsx';
 import MemberLayout from './components/MemberLayout.jsx';
 
 import AdminLayout from './pages/admin/AdminLayout.jsx';
@@ -32,6 +37,7 @@ import AdminUsers from './pages/admin/AdminUsers.jsx';
 import AdminGameOptions from './pages/admin/AdminGameOptions.jsx';
 import AdminExpertQueue from './pages/admin/AdminExpertQueue.jsx';
 import AdminEconomy from './pages/admin/AdminEconomy.jsx';
+import AdminSupport from './pages/admin/AdminSupport.jsx';
 
 export default function App() {
   return (
@@ -48,6 +54,7 @@ export default function App() {
         <Route path="/news/:id" element={<NewsDetail />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/u/:id" element={<PublicProfile />} />
         <Route path="/h2h" element={<H2HList />} />
         <Route path="/h2h/:id" element={<H2HDetail />} />
         <Route
@@ -55,6 +62,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <H2HCreate />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/support/:id"
+          element={
+            <ProtectedRoute>
+              <SupportDetail />
             </ProtectedRoute>
           }
         />
@@ -69,6 +84,9 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/wallet" element={<Wallet />} />
           <Route path="/players" element={<PlayerSearch />} />
+          <Route path="/messages" element={<MessagesInbox />} />
+          <Route path="/messages/:userId" element={<MessageThread />} />
+          <Route path="/support" element={<SupportPage />} />
         </Route>
         <Route
           path="/admin"
@@ -132,6 +150,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={[]}>
                 <AdminEconomy />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="support"
+            element={
+              <ProtectedRoute roles={['writer']}>
+                <AdminSupport />
               </ProtectedRoute>
             }
           />

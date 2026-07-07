@@ -6,7 +6,8 @@ import { adjustWallet, getBalance } from '../services/wallet.js';
 import { addSeasonPoints, RESULT_POINTS } from '../services/grading.js';
 import { sendEmailNotification } from '../services/notify.js';
 import { uploadEvidence, publicEvidenceUrl } from '../middleware/upload.js';
-import { emitToUser, emitExpertQueueUpdate } from '../services/realtime.js';
+import { emitExpertQueueUpdate } from '../services/realtime.js';
+import { notifyUser } from '../services/notifications.js';
 
 const router = Router();
 
@@ -47,6 +48,24 @@ function withUserInfo(legs) {
 
 function getLegs(matchId) {
   return withUserInfo(db.prepare('SELECT * FROM h2h_legs WHERE match_id = ? ORDER BY leg_number').all(matchId));
+}
+
+// Attaches creator/opponent name+avatar to match listing rows so "مسابقات
+// من" can show who's actually in each match instead of bare stake/console
+// info with no opponent context.
+function withMatchUserInfo(matches) {
+  if (matches.length === 0) return matches;
+  const ids = [...new Set(matches.flatMap((m) => [m.creator_id, m.opponent_id]).filter(Boolean))];
+  const placeholders = ids.map(() => '?').join(',');
+  const users = db.prepare(`SELECT id, name, avatar_url FROM users WHERE id IN (${placeholders})`).all(...ids);
+  const byId = Object.fromEntries(users.map((u) => [u.id, u]));
+  return matches.map((m) => ({
+    ...m,
+    creator_name: byId[m.creator_id]?.name || null,
+    creator_avatar: byId[m.creator_id]?.avatar_url || null,
+    opponent_name: m.opponent_id ? byId[m.opponent_id]?.name || null : null,
+    opponent_avatar: m.opponent_id ? byId[m.opponent_id]?.avatar_url || null : null,
+  }));
 }
 
 // Lazy "cron replacement": a forfeited leg sits in a grace period where the
@@ -130,15 +149,10 @@ function tryFinalizeMatch(matchId) {
   }
 
   for (const uid of [match.creator_id, match.opponent_id]) {
+    const message = isDraw ? 'مسابقه رو-در-رو شما با تساوی به پایان رسید.' : uid === winnerId ? 'تبریک! شما برنده مسابقه شدید 🎉' : 'مسابقه رو-در-رو شما به پایان رسید.';
     const email = userEmail(uid);
-    if (email) {
-      sendEmailNotification(
-        email,
-        'نتیجه مسابقه رو-در-رو نهایی شد',
-        isDraw ? 'مسابقه شما با تساوی به پایان رسید.' : uid === winnerId ? 'تبریک! شما برنده مسابقه شدید.' : 'مسابقه شما به پایان رسید.'
-      );
-    }
-    emitToUser(uid, 'h2h:match_completed', { match_id: matchId, winner_id: winnerId, is_draw: isDraw });
+    if (email) sendEmailNotification(email, 'نتیجه مسابقه رو-در-رو نهایی شد', message);
+    notifyUser(uid, message, isDraw ? 'info' : uid === winnerId ? 'success' : 'info', `/h2h/${matchId}`);
   }
 }
 
@@ -147,14 +161,14 @@ router.get('/', (req, res) => {
   const rows = status
     ? db.prepare('SELECT * FROM h2h_matches WHERE status = ? ORDER BY created_at DESC').all(status)
     : db.prepare("SELECT * FROM h2h_matches WHERE status = 'open' ORDER BY created_at DESC").all();
-  res.json({ matches: rows.map(publicMatch) });
+  res.json({ matches: withMatchUserInfo(rows).map(publicMatch) });
 });
 
 router.get('/mine', requireAuth, (req, res) => {
   const rows = db
     .prepare('SELECT * FROM h2h_matches WHERE creator_id = ? OR opponent_id = ? ORDER BY created_at DESC')
     .all(req.user.id, req.user.id);
-  res.json({ matches: rows.map(publicMatch) });
+  res.json({ matches: withMatchUserInfo(rows).map(publicMatch) });
 });
 
 router.get('/:id', (req, res) => {
@@ -293,7 +307,7 @@ router.post('/:id/join', requireAuth, (req, res) => {
     if (email) {
       sendEmailNotification(email, 'مسابقه شما قفل شد', 'حریف شما جوین شد و مسابقه قفل شده است. اکنون می‌توانید بازی را شروع کنید.');
     }
-    emitToUser(uid, 'h2h:match_locked', { match_id: match.id });
+    notifyUser(uid, 'حریف جوین شد و مسابقه قفل شد — می‌توانید بازی را شروع کنید.', 'success', `/h2h/${match.id}`);
   }
 
   const updated = db.prepare('SELECT * FROM h2h_matches WHERE id = ?').get(match.id);
@@ -337,7 +351,7 @@ router.post('/:id/legs/:legNumber/submit', requireAuth, (req, res) => {
   if (email) {
     sendEmailNotification(email, 'نتیجه بازی برای تایید شما ثبت شد', `نتیجه ثبت‌شده: ${home_score} - ${away_score}. لطفاً تایید یا اعتراض خود را ثبت کنید.`);
   }
-  emitToUser(otherUserId, 'h2h:leg_submitted', { match_id: leg.match_id, leg_number: leg.leg_number, home_score, away_score });
+  notifyUser(otherUserId, `نتیجه نیم‌فصل ${leg.leg_number} ثبت شد — منتظر تایید شماست.`, 'info', `/h2h/${leg.match_id}`);
 
   res.json({ leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id) });
 });
@@ -361,7 +375,7 @@ router.post('/:id/legs/:legNumber/confirm', requireAuth, (req, res) => {
      confirmed_by_id = ?, status = 'confirmed', resolved_at = datetime('now') WHERE id = ?`
   ).run(req.user.id, leg.id);
 
-  emitToUser(leg.submitted_by_id, 'h2h:leg_confirmed', { match_id: leg.match_id, leg_number: leg.leg_number });
+  notifyUser(leg.submitted_by_id, `نتیجه ثبت‌شده شما برای نیم‌فصل ${leg.leg_number} تایید شد.`, 'success', `/h2h/${leg.match_id}`);
 
   tryFinalizeMatch(leg.match_id);
 
@@ -406,7 +420,7 @@ router.post('/:id/legs/:legNumber/dispute', requireAuth, (req, res) => {
        status = 'expert_review' WHERE id = ?`
     ).run(home_score, away_score, evidence, req.user.id, leg.id);
 
-    emitToUser(leg.submitted_by_id, 'h2h:disputed', { match_id: leg.match_id, leg_number: leg.leg_number });
+    notifyUser(leg.submitted_by_id, `به نتیجه ثبت‌شده شما در نیم‌فصل ${leg.leg_number} اعتراض شد.`, 'warning', `/h2h/${leg.match_id}`);
     emitExpertQueueUpdate();
 
     res.json({ leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id) });
@@ -450,7 +464,12 @@ router.post('/:id/legs/:legNumber/claim-forfeit', requireAuth, (req, res) => {
       `چون نتیجه در فرجه تعیین‌شده ثبت نشد، نتیجه ۳-۰ به نفع حریف ثبت شد. تا ${disputeWindowHours} ساعت فرصت اعتراض دارید.`
     );
   }
-  emitToUser(loserId, 'h2h:forfeit_claimed', { match_id: leg.match_id, leg_number: leg.leg_number });
+  notifyUser(
+    loserId,
+    `چون به‌موقع نتیجه ثبت نشد، نیم‌فصل ${leg.leg_number} به‌صورت فرجه‌ای ۳-۰ ثبت شد.`,
+    'warning',
+    `/h2h/${leg.match_id}`
+  );
 
   res.json({ leg: db.prepare('SELECT * FROM h2h_legs WHERE id = ?').get(leg.id) });
 });
@@ -547,7 +566,7 @@ router.post('/:id/legs/:legNumber/expert-resolve', requireAuth, requireMatchExpe
     if (email) {
       sendEmailNotification(email, 'نتیجه توسط کارشناس بررسی و ثبت شد', `نتیجه نهایی: ${home_score} - ${away_score}`);
     }
-    emitToUser(uid, 'h2h:expert_resolved', { match_id: leg.match_id, leg_number: leg.leg_number, home_score, away_score });
+    notifyUser(uid, `کارشناس نتیجه نیم‌فصل ${leg.leg_number} را ${home_score}-${away_score} اعلام کرد.`, 'info', `/h2h/${leg.match_id}`);
   }
 
   res.json({

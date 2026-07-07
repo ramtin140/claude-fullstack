@@ -1,20 +1,28 @@
-import { useState } from 'react';
-import { Search, Swords } from 'lucide-react';
-import { api } from '../api/client.js';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Search, Swords, User, MessageCircle } from 'lucide-react';
+import { api, assetUrl } from '../api/client.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import '../styles/pages.css';
 
 export default function PlayerSearch() {
+  const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
+  const [messagingEnabled, setMessagingEnabled] = useState(true);
+
+  useEffect(() => {
+    api.get('/messages/settings').then(({ data }) => setMessagingEnabled(data.messaging_enabled));
+  }, []);
 
   async function handleSearch(e) {
     e.preventDefault();
     setError(null);
     setMessage(null);
     try {
-      const { data } = await api.get('/users/search', { params: { query } });
+      const { data } = await api.get('/users/directory', { params: { query } });
       setResults(data.users);
     } catch (err) {
       setError(err.response?.data?.error || 'خطا در جستجو');
@@ -36,8 +44,8 @@ export default function PlayerSearch() {
   return (
     <div className="page-wrap">
       <div className="page-header">
-        <h1>جستجوی حریف</h1>
-        <p>بر اساس نام یا شناسه کنسول (PSN/XBOX/Steam) حریف پیدا کنید و چالش بفرستید</p>
+        <h1>جستجوی کاربران و حریف‌ها</h1>
+        <p>بر اساس نام یا شناسه فیفاسول کاربران را پیدا کنید، پروفایل ببینید و در ارتباط باشید</p>
       </div>
       <div className="container" style={{ paddingBottom: 60 }}>
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginBottom: 24, maxWidth: 480 }}>
@@ -50,7 +58,7 @@ export default function PlayerSearch() {
               background: 'var(--bg-darker)',
               color: 'var(--text-light)',
             }}
-            placeholder="نام یا شناسه کنسول..."
+            placeholder="نام یا شناسه فیفاسول (FS-xxxx)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -66,18 +74,34 @@ export default function PlayerSearch() {
           <div className="grid-2">
             {results.map((u) => (
               <div key={u.id} className="card tournament-card">
-                <h3>
-                  {u.name} {u.is_vip ? <span className="badge badge-live" style={{ marginRight: 8 }}>VIP</span> : null}
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {u.avatar_url ? (
+                    <img src={assetUrl(u.avatar_url)} alt="" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (
+                    <span className="opponent-avatar-placeholder" style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <User size={16} />
+                    </span>
+                  )}
+                  {u.name} {u.is_vip ? <span className="badge badge-live">VIP</span> : null}
                 </h3>
-                <p>
-                  گرید: {u.grade}
-                  {u.psn_id && ` — PSN: ${u.psn_id}`}
-                  {u.xbox_id && ` — XBOX: ${u.xbox_id}`}
-                  {u.steam_id && ` — Steam: ${u.steam_id}`}
+                <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  گرید {u.grade} — {u.fifa_soul_id}
                 </p>
-                <button className="btn btn-outline" onClick={() => sendChallenge(u.id)}>
-                  <Swords size={15} /> ارسال چالش
-                </button>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <Link to={`/u/${u.id}`} className="btn btn-outline">
+                    مشاهده پروفایل
+                  </Link>
+                  {messagingEnabled && (
+                    <Link to={`/messages/${u.id}`} className="btn btn-outline">
+                      <MessageCircle size={15} /> پیام
+                    </Link>
+                  )}
+                  {user?.is_vip && (
+                    <button className="btn btn-outline" onClick={() => sendChallenge(u.id)}>
+                      <Swords size={15} /> ارسال چالش
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

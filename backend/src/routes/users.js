@@ -19,8 +19,34 @@ function publicProfile(u) {
 }
 
 router.get('/', requireAuth, requireAdmin, (req, res) => {
-  const rows = db.prepare('SELECT * FROM users ORDER BY created_at DESC').all();
+  const { query } = req.query;
+  const rows = query
+    ? db
+        .prepare(
+          `SELECT * FROM users WHERE name LIKE ? OR email LIKE ? OR fifa_soul_id LIKE ? ORDER BY created_at DESC`
+        )
+        .all(`%${query.trim()}%`, `%${query.trim()}%`, `%${query.trim()}%`)
+    : db.prepare('SELECT * FROM users ORDER BY created_at DESC').all();
   res.json({ users: rows.map(publicUser) });
+});
+
+// General player directory — findable by ANY logged-in user (unlike /search
+// below, which is the VIP-only challenge-search) so people can look each
+// other up by name/fifa_soul_id, view a profile, and start a conversation.
+router.get('/directory', requireAuth, (req, res) => {
+  const { query } = req.query;
+  if (!query || query.trim().length < 2) {
+    return res.status(400).json({ error: 'عبارت جستجو باید حداقل ۲ کاراکتر باشد.' });
+  }
+  const like = `%${query.trim()}%`;
+  const rows = db
+    .prepare(
+      `SELECT id, name, avatar_url, fifa_soul_id, is_vip, grade FROM users
+       WHERE id != ? AND (name LIKE ? OR fifa_soul_id LIKE ?)
+       LIMIT 20`
+    )
+    .all(req.user.id, like, like);
+  res.json({ users: rows.map((u) => ({ ...u, is_vip: Boolean(u.is_vip) })) });
 });
 
 // "بازی بر اساس جستجوی یکدیگر کاربران... این قابلیت برای بازیکنان با اکانت

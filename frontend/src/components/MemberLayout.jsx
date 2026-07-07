@@ -1,21 +1,26 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, User, Wallet as WalletIcon, Swords, Search, Menu, X } from 'lucide-react';
+import { LayoutDashboard, User, Wallet as WalletIcon, Swords, Search, Menu, X, MessageCircle, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useRealtime } from '../context/RealtimeContext.jsx';
 import { assetUrl } from '../api/client.js';
 import '../styles/member.css';
+import '../styles/toast.css';
 
-const baseLinks = [
+const links = [
   { to: '/dashboard', label: 'داشبورد', icon: LayoutDashboard, end: true },
   { to: '/profile', label: 'پروفایل من', icon: User },
   { to: '/wallet', label: 'کیف پول من', icon: WalletIcon },
   { to: '/h2h?tab=mine', label: 'مسابقات من', icon: Swords },
+  { to: '/players', label: 'جستجوی کاربران', icon: Search },
+  { to: '/messages', label: 'پیام‌ها', icon: MessageCircle, badgeKey: 'unreadMessages' },
+  { to: '/support', label: 'پشتیبانی', icon: LifeBuoy },
 ];
 
 export default function MemberLayout() {
   const { user } = useAuth();
+  const realtime = useRealtime();
   const [open, setOpen] = useState(false);
-  const links = user?.is_vip ? [...baseLinks, { to: '/players', label: 'جستجوی حریف', icon: Search }] : baseLinks;
 
   return (
     <div className="member-layout">
@@ -34,12 +39,16 @@ export default function MemberLayout() {
           </div>
         </div>
 
-        {links.map(({ to, label, icon: Icon, end }) => (
-          <NavLink key={to} to={to} end={end} onClick={() => setOpen(false)}>
-            <Icon size={18} />
-            {label}
-          </NavLink>
-        ))}
+        {links.map(({ to, label, icon: Icon, end, badgeKey }) => {
+          const badgeCount = badgeKey ? realtime?.[badgeKey] : 0;
+          return (
+            <NavLink key={to} to={to} end={end} onClick={() => setOpen(false)}>
+              <Icon size={18} />
+              {label}
+              {badgeCount > 0 && <span className="expert-badge">{badgeCount}</span>}
+            </NavLink>
+          );
+        })}
       </aside>
 
       <button className="member-sidebar-toggle" onClick={() => setOpen((o) => !o)}>

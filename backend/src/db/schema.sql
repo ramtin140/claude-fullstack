@@ -174,6 +174,20 @@ CREATE TABLE IF NOT EXISTS challenges (
   resolved_at TEXT
 );
 
+-- Persisted notification inbox — every live event (challenge, h2h result,
+-- dispute, forfeit, ...) is written here first and then pushed over the
+-- websocket, so a user who was offline when it happened still sees it the
+-- next time they open the bell dropdown instead of losing it forever.
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  message TEXT NOT NULL,
+  tone TEXT NOT NULL DEFAULT 'info',
+  link TEXT,
+  is_read INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Sequential/multi-part expert review history for a disputed or forfeited leg
 -- ("کارشناسی میتونه چند قسمت داشته باشه یا پشت سر هم") — every expert
 -- decision is appended here so the review trail is auditable even when more
@@ -185,5 +199,38 @@ CREATE TABLE IF NOT EXISTS h2h_expert_reviews (
   home_score INTEGER NOT NULL,
   away_score INTEGER NOT NULL,
   notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Direct 1:1 messaging between users (findable via the general player
+-- search) — admin can turn this off site-wide via the 'messaging_enabled'
+-- app_settings flag without a code deploy.
+CREATE TABLE IF NOT EXISTS messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  from_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  to_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  read_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Support ticket system — users raise an issue tagged by site section,
+-- staff (senior_admin/writer) reply in a per-ticket thread.
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  category TEXT NOT NULL DEFAULT 'other', -- 'wallet' | 'h2h' | 'tournaments' | 'account' | 'other'
+  subject TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open', -- 'open' | 'answered' | 'closed'
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS support_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket_id INTEGER NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+  sender_id INTEGER NOT NULL REFERENCES users(id),
+  is_staff INTEGER NOT NULL DEFAULT 0,
+  body TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

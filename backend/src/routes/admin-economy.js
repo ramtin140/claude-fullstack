@@ -78,4 +78,17 @@ router.put('/vip-threshold', requireAuth, requireAdmin, (req, res) => {
   res.json({ threshold });
 });
 
+router.get('/messaging-enabled', requireAuth, requireAdmin, (req, res) => {
+  const row = db.prepare("SELECT value FROM app_settings WHERE key = 'messaging_enabled'").get();
+  res.json({ messaging_enabled: row ? row.value === '1' : true });
+});
+
+router.put('/messaging-enabled', requireAuth, requireAdmin, (req, res) => {
+  const { messaging_enabled } = req.body;
+  db.prepare(
+    "INSERT INTO app_settings (key, value) VALUES ('messaging_enabled', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+  ).run(messaging_enabled ? '1' : '0');
+  res.json({ messaging_enabled: Boolean(messaging_enabled) });
+});
+
 export default router;

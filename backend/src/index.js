@@ -21,6 +21,9 @@ import walletRoutes from './routes/wallet.js';
 import adminEconomyRoutes from './routes/admin-economy.js';
 import gameOptionsRoutes from './routes/game-options.js';
 import challengesRoutes from './routes/challenges.js';
+import notificationsRoutes from './routes/notifications.js';
+import messagesRoutes from './routes/messages.js';
+import supportRoutes from './routes/support.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -49,6 +52,9 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/admin', adminEconomyRoutes);
 app.use('/api/game-options', gameOptionsRoutes);
 app.use('/api/challenges', challengesRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/messages', messagesRoutes);
+app.use('/api/support', supportRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'مسیر یافت نشد.' }));
 

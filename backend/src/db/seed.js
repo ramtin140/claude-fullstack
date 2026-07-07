@@ -252,3 +252,9 @@ if (!h2hTimeLimit) {
   db.prepare("INSERT INTO app_settings (key, value) VALUES ('h2h_forfeit_dispute_window_hours', '1')").run();
   console.log('Seeded default h2h time-limit settings (24h play window, 1h forfeit-dispute window).');
 }
+
+const messagingEnabled = db.prepare("SELECT value FROM app_settings WHERE key = 'messaging_enabled'").get();
+if (!messagingEnabled) {
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('messaging_enabled', '1')").run();
+  console.log('Seeded default messaging_enabled setting (on).');
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Trash2, Search } from 'lucide-react';
 import { api } from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { ROLE_LABELS } from '../../components/ProtectedRoute.jsx';
@@ -15,22 +16,28 @@ const roleBadge = {
 export default function AdminUsers() {
   const { user: me } = useAuth();
   const [users, setUsers] = useState([]);
+  const [query, setQuery] = useState('');
 
-  function load() {
-    api.get('/users').then(({ data }) => setUsers(data.users));
+  function load(q) {
+    api.get('/users', { params: q ? { query: q } : {} }).then(({ data }) => setUsers(data.users));
   }
 
-  useEffect(load, []);
+  useEffect(() => load(), []);
+
+  function handleSearch(e) {
+    e.preventDefault();
+    load(query);
+  }
 
   async function changeRole(u, role) {
     await api.put(`/users/${u.id}/role`, { role });
-    load();
+    load(query);
   }
 
   async function handleDelete(id) {
     if (!confirm('آیا از حذف این کاربر مطمئن هستید؟')) return;
     await api.delete(`/users/${id}`);
-    load();
+    load(query);
   }
 
   return (
@@ -38,6 +45,18 @@ export default function AdminUsers() {
       <div className="admin-header">
         <h1>مدیریت کاربران</h1>
       </div>
+
+      <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginBottom: 18, maxWidth: 420 }}>
+        <input
+          placeholder="جستجو بر اساس نام، ایمیل یا fifa soul ID..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
+        />
+        <button className="btn btn-primary" type="submit">
+          <Search size={16} />
+        </button>
+      </form>
 
       <div className="card" style={{ overflowX: 'auto' }}>
         <table className="admin-table">
@@ -55,7 +74,7 @@ export default function AdminUsers() {
             {users.map((u) => (
               <tr key={u.id}>
                 <td>
-                  {u.name}
+                  <Link to={`/u/${u.id}`}>{u.name}</Link>
                   {u.is_guest ? ' 👤' : ''}
                 </td>
                 <td>{u.email}</td>

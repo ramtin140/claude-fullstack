@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { db } from '../db/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { sendEmailNotification } from '../services/notify.js';
-import { emitToUser } from '../services/realtime.js';
+import { notifyUser } from '../services/notifications.js';
 
 const router = Router();
 
@@ -53,7 +53,7 @@ router.post('/', requireAuth, (req, res) => {
 
   const challenge = db.prepare('SELECT * FROM challenges WHERE id = ?').get(info.lastInsertRowid);
   const fromUser = db.prepare('SELECT name FROM users WHERE id = ?').get(req.user.id);
-  emitToUser(to_user_id, 'challenge:new', { challenge, from_user_name: fromUser?.name });
+  notifyUser(to_user_id, `${fromUser?.name} شما را به مسابقه رو-در-رو دعوت کرد.`, 'info', '/dashboard');
 
   res.status(201).json({ challenge });
 });
@@ -96,7 +96,7 @@ router.post('/:id/accept', requireAuth, (req, res) => {
 
   const email = userEmail(challenge.from_user_id);
   if (email) sendEmailNotification(email, 'چالش شما پذیرفته شد', 'حریف چالش شما را پذیرفت و مسابقه شروع شد.');
-  emitToUser(challenge.from_user_id, 'challenge:accepted', { challenge_id: challenge.id, h2h_match_id: matchId });
+  notifyUser(challenge.from_user_id, 'حریف چالش شما را پذیرفت!', 'success', `/h2h/${matchId}`);
 
   res.json({ challenge: db.prepare('SELECT * FROM challenges WHERE id = ?').get(challenge.id), h2h_match_id: matchId });
 });
@@ -112,7 +112,7 @@ router.post('/:id/decline', requireAuth, (req, res) => {
   }
 
   db.prepare(`UPDATE challenges SET status = 'declined', resolved_at = datetime('now') WHERE id = ?`).run(challenge.id);
-  emitToUser(challenge.from_user_id, 'challenge:declined', { challenge_id: challenge.id });
+  notifyUser(challenge.from_user_id, 'حریف چالش شما را رد کرد.', 'warning', '/dashboard');
   res.json({ challenge: db.prepare('SELECT * FROM challenges WHERE id = ?').get(challenge.id) });
 });
 

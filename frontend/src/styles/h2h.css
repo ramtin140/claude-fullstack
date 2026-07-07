@@ -33,6 +33,33 @@
   color: var(--text-muted);
 }
 
+.h2h-opponent-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.h2h-person-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.h2h-person-chip img,
+.h2h-person-chip .opponent-avatar-placeholder {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bg-darker);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
 .h2h-tabs {
   display: flex;
   gap: 8px;
