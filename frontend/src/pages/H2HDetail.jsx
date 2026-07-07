@@ -31,10 +31,10 @@ function formatRemaining(deadline) {
   return `${hours} ساعت و ${minutes} دقیقه`;
 }
 
-function OpponentChip({ name, avatar, label }) {
+function PlayerChip({ name, avatar, fifaSoulId, roleLabel }) {
   return (
     <div className="opponent-chip">
-      <span style={{ color: 'var(--text-muted)' }}>{label}</span>
+      <span className="role-tag">{roleLabel}</span>
       {avatar ? (
         <img src={assetUrl(avatar)} alt="" />
       ) : (
@@ -42,7 +42,40 @@ function OpponentChip({ name, avatar, label }) {
           <User size={14} />
         </span>
       )}
-      <strong>{name || 'حریف'}</strong>
+      <strong>{name || 'نامشخص'}</strong>
+      {fifaSoulId && <span className="fifa-soul-tag">{fifaSoulId}</span>}
+    </div>
+  );
+}
+
+// Always shows BOTH sides labeled by role (میزبان/میهمان) — regardless of
+// who's viewing — since leg 2 (برگشت) swaps home/away relative to leg 1
+// (رفت), and that swap was exactly the source of confusion being fixed here.
+function LegParticipants({ leg }) {
+  return (
+    <div className="leg-participants">
+      <PlayerChip name={leg.home_user_name} avatar={leg.home_user_avatar} fifaSoulId={leg.home_user_fifa_soul_id} roleLabel="میزبان:" />
+      <PlayerChip name={leg.away_user_name} avatar={leg.away_user_avatar} fifaSoulId={leg.away_user_fifa_soul_id} roleLabel="میهمان:" />
+    </div>
+  );
+}
+
+function ScoreInputRow({ homeLabel, homeId, awayLabel, awayId, homeValue, onHomeChange, awayValue, onAwayChange }) {
+  return (
+    <div className="score-input-row">
+      <div className="score-input-col">
+        <label>
+          {homeLabel} {homeId && <span className="fifa-soul-tag">{homeId}</span>}
+        </label>
+        <input type="number" min={0} required value={homeValue} onChange={(e) => onHomeChange(e.target.value)} />
+      </div>
+      <span className="score-input-sep">-</span>
+      <div className="score-input-col">
+        <label>
+          {awayLabel} {awayId && <span className="fifa-soul-tag">{awayId}</span>}
+        </label>
+        <input type="number" min={0} required value={awayValue} onChange={(e) => onAwayChange(e.target.value)} />
+      </div>
     </div>
   );
 }
@@ -65,9 +98,6 @@ function LegCard({ leg, index, userId, onSubmit, onConfirm, onDispute, onClaimFo
   }, []);
 
   const isParticipant = userId === leg.home_user_id || userId === leg.away_user_id;
-  const isHome = userId === leg.home_user_id;
-  const opponentName = isHome ? leg.away_user_name : leg.home_user_name;
-  const opponentAvatar = isHome ? leg.away_user_avatar : leg.home_user_avatar;
 
   const deadline = parseUtc(leg.deadline_at);
   const deadlinePassed = deadline && Date.now() >= deadline.getTime();
@@ -79,13 +109,11 @@ function LegCard({ leg, index, userId, onSubmit, onConfirm, onDispute, onClaimFo
   return (
     <div className="card leg-card">
       <div className="leg-title">
-        <strong>نیم‌فصل {index + 1}</strong>
+        <strong>نیم‌فصل {index + 1} ({index === 0 ? 'رفت' : 'برگشت'})</strong>
         <span className="badge badge-waiting">{legStatusLabel[leg.status]}</span>
       </div>
 
-      {isParticipant && ['pending_submission', 'pending_confirmation'].includes(leg.status) && (
-        <OpponentChip name={opponentName} avatar={opponentAvatar} label="شما در برابر:" />
-      )}
+      <LegParticipants leg={leg} />
 
       {leg.status === 'forfeited' ? (
         <div>
@@ -183,11 +211,16 @@ function LegCard({ leg, index, userId, onSubmit, onConfirm, onDispute, onClaimFo
                 );
               }}
             >
-              <div className="leg-score-row">
-                <input type="number" min={0} required value={homeScore} onChange={(e) => setHomeScore(e.target.value)} />
-                <span>-</span>
-                <input type="number" min={0} required value={awayScore} onChange={(e) => setAwayScore(e.target.value)} />
-              </div>
+              <ScoreInputRow
+                homeLabel={`گل میزبان (${leg.home_user_name || '؟'})`}
+                homeId={leg.home_user_fifa_soul_id}
+                awayLabel={`گل میهمان (${leg.away_user_name || '؟'})`}
+                awayId={leg.away_user_fifa_soul_id}
+                homeValue={homeScore}
+                onHomeChange={setHomeScore}
+                awayValue={awayScore}
+                onAwayChange={setAwayScore}
+              />
               <button className="btn btn-primary" type="submit" style={{ width: '100%' }}>
                 ثبت نتیجه
               </button>
@@ -222,11 +255,16 @@ function LegCard({ leg, index, userId, onSubmit, onConfirm, onDispute, onClaimFo
                 );
               }}
             >
-              <div className="leg-score-row">
-                <input type="number" min={0} required value={disputeHome} onChange={(e) => setDisputeHome(e.target.value)} />
-                <span>-</span>
-                <input type="number" min={0} required value={disputeAway} onChange={(e) => setDisputeAway(e.target.value)} />
-              </div>
+              <ScoreInputRow
+                homeLabel={`گل میزبان (${leg.home_user_name || '؟'})`}
+                homeId={leg.home_user_fifa_soul_id}
+                awayLabel={`گل میهمان (${leg.away_user_name || '؟'})`}
+                awayId={leg.away_user_fifa_soul_id}
+                homeValue={disputeHome}
+                onHomeChange={setDisputeHome}
+                awayValue={disputeAway}
+                onAwayChange={setDisputeAway}
+              />
               <div className="form-field">
                 <label>توضیحات (اختیاری)</label>
                 <textarea rows={2} value={evidenceText} onChange={(e) => setEvidenceText(e.target.value)} />

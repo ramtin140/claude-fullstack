@@ -66,15 +66,15 @@ export default function AdminExpertQueue() {
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 14 }}>
                 <input
                   type="number"
-                  placeholder="گل میزبان"
-                  style={{ width: 100, padding: 10, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
+                  placeholder={`گل میزبان (${leg.home_user_name || '؟'})`}
+                  style={{ width: 160, padding: 10, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
                   onChange={(e) => setScores({ ...scores, [leg.id]: { ...scores[leg.id], home: e.target.value } })}
                 />
                 <span style={{ color: 'var(--text-muted)' }}>-</span>
                 <input
                   type="number"
-                  placeholder="گل میهمان"
-                  style={{ width: 100, padding: 10, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
+                  placeholder={`گل میهمان (${leg.away_user_name || '؟'})`}
+                  style={{ width: 160, padding: 10, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
                   onChange={(e) => setScores({ ...scores, [leg.id]: { ...scores[leg.id], away: e.target.value } })}
                 />
                 <button className="btn btn-primary" onClick={() => resolve(leg)}>

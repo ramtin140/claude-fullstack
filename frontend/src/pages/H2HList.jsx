@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Coins, Zap, Lock, Plus } from 'lucide-react';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -10,7 +10,8 @@ const statusBadge = { open: 'badge-waiting', locked: 'badge-live', completed: 'b
 
 export default function H2HList() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('open');
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState(searchParams.get('tab') === 'mine' ? 'mine' : 'open');
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
 

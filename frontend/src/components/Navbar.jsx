@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useRealtime } from '../context/RealtimeContext.jsx';
 import { hasStaffAccess, isStaff } from './ProtectedRoute.jsx';
 import { assetUrl } from '../api/client.js';
+import NotificationBell from './NotificationBell.jsx';
 import '../styles/layout.css';
 import '../styles/toast.css';
 
@@ -43,6 +44,7 @@ export default function Navbar() {
         <div className="nav-actions">
           {user ? (
             <>
+              <NotificationBell />
               <Link to="/wallet" className="user-chip" title="کیف پول">
                 <WalletIcon size={16} />
                 {user.ticket_balance ?? 0}

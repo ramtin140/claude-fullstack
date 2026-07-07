@@ -18,6 +18,12 @@ const SELECT_WITH_NAMES = `
   LEFT JOIN users au ON au.id = m.away_user_id
 `;
 
+// is_bye is an INTEGER 0/1 column — "0 && <Jsx/>" would otherwise render the
+// literal text "0" wherever the frontend gates UI on this flag.
+function publicMatch(m) {
+  return { ...m, is_bye: Boolean(m.is_bye) };
+}
+
 router.get('/', (req, res) => {
   const { status, category } = req.query;
   const clauses = [];
@@ -34,13 +40,13 @@ router.get('/', (req, res) => {
   const rows = db
     .prepare(`${SELECT_WITH_NAMES} ${where} ORDER BY m.created_at DESC`)
     .all(...params);
-  res.json({ matches: rows });
+  res.json({ matches: rows.map(publicMatch) });
 });
 
 router.get('/:id', (req, res) => {
   const match = db.prepare(`${SELECT_WITH_NAMES} WHERE m.id = ?`).get(req.params.id);
   if (!match) return res.status(404).json({ error: 'مسابقه یافت نشد.' });
-  res.json({ match });
+  res.json({ match: publicMatch(match) });
 });
 
 router.post('/', requireAuth, requireAdmin, (req, res) => {
@@ -72,7 +78,7 @@ router.post('/', requireAuth, requireAdmin, (req, res) => {
     );
 
   const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(info.lastInsertRowid);
-  res.status(201).json({ match });
+  res.status(201).json({ match: publicMatch(match) });
 });
 
 router.put('/:id', requireAuth, requireAdmin, (req, res) => {
@@ -99,7 +105,7 @@ router.put('/:id', requireAuth, requireAdmin, (req, res) => {
   }
 
   const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(req.params.id);
-  res.json({ match });
+  res.json({ match: publicMatch(match) });
 });
 
 router.delete('/:id', requireAuth, requireAdmin, (req, res) => {

@@ -21,6 +21,7 @@ import H2HDetail from './pages/H2HDetail.jsx';
 import Wallet from './pages/Wallet.jsx';
 import PlayerSearch from './pages/PlayerSearch.jsx';
 import Profile from './pages/Profile.jsx';
+import MemberLayout from './components/MemberLayout.jsx';
 
 import AdminLayout from './pages/admin/AdminLayout.jsx';
 import AdminDashboard from './pages/admin/AdminDashboard.jsx';
@@ -58,37 +59,17 @@ export default function App() {
           }
         />
         <Route
-          path="/wallet"
           element={
             <ProtectedRoute>
-              <Wallet />
+              <MemberLayout />
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/players"
-          element={
-            <ProtectedRoute>
-              <PlayerSearch />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
+        >
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/wallet" element={<Wallet />} />
+          <Route path="/players" element={<PlayerSearch />} />
+        </Route>
         <Route
           path="/admin"
           element={

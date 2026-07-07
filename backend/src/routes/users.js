@@ -7,7 +7,8 @@ const router = Router();
 
 function publicUser(u) {
   const { password_hash, ...rest } = u;
-  return rest;
+  // Same normalization as auth.js's publicUser — see the comment there.
+  return { ...rest, is_vip: Boolean(rest.is_vip), is_guest: Boolean(rest.is_guest) };
 }
 
 // Fields safe to show on another user's public profile — no email, no

@@ -8,7 +8,11 @@ const router = Router();
 
 function publicUser(u) {
   const { password_hash, ...rest } = u;
-  return rest;
+  // SQLite has no boolean type — these columns come back as raw 0/1 integers,
+  // and "0 && <Jsx/>" renders the literal text "0" in React instead of
+  // nothing, so every boolean-shaped field must be normalized before it
+  // leaves the API.
+  return { ...rest, is_vip: Boolean(rest.is_vip), is_guest: Boolean(rest.is_guest) };
 }
 
 router.post('/register', (req, res) => {

@@ -22,20 +22,26 @@ function getSetting(key, fallback) {
   return row ? row.value : fallback;
 }
 
-// Attaches opponent name/avatar to each leg so the submit/confirm UI can show
-// "شما در برابر: [عکس] [نام]" instead of bare, easily-swapped score inputs.
+// Attaches opponent name/avatar/fifa_soul_id to each leg so the submit/confirm
+// UI can show "شما در برابر: [عکس] [نام] [FS-xxxx]" instead of bare,
+// easily-swapped score inputs. is_expert_reviewed is also normalized here —
+// it's an INTEGER 0/1 column and "0 && <Jsx/>" would otherwise render the
+// literal text "0" in the leg card.
 function withUserInfo(legs) {
   if (legs.length === 0) return legs;
   const ids = [...new Set(legs.flatMap((l) => [l.home_user_id, l.away_user_id]))];
   const placeholders = ids.map(() => '?').join(',');
-  const users = db.prepare(`SELECT id, name, avatar_url FROM users WHERE id IN (${placeholders})`).all(...ids);
+  const users = db.prepare(`SELECT id, name, avatar_url, fifa_soul_id FROM users WHERE id IN (${placeholders})`).all(...ids);
   const byId = Object.fromEntries(users.map((u) => [u.id, u]));
   return legs.map((leg) => ({
     ...leg,
+    is_expert_reviewed: Boolean(leg.is_expert_reviewed),
     home_user_name: byId[leg.home_user_id]?.name || null,
     home_user_avatar: byId[leg.home_user_id]?.avatar_url || null,
+    home_user_fifa_soul_id: byId[leg.home_user_id]?.fifa_soul_id || null,
     away_user_name: byId[leg.away_user_id]?.name || null,
     away_user_avatar: byId[leg.away_user_id]?.avatar_url || null,
+    away_user_fifa_soul_id: byId[leg.away_user_id]?.fifa_soul_id || null,
   }));
 }
 

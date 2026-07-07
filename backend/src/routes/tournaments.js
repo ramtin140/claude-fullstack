@@ -8,6 +8,12 @@ const router = Router();
 const VALID_TYPES = ['league', 'cup', 'playoff'];
 const VALID_CUP_SIZES = [4, 8, 16];
 
+// bracket_generated is an INTEGER 0/1 column — "0 && <Jsx/>" would otherwise
+// render the literal text "0" wherever the frontend gates UI on this flag.
+function publicTournament(t) {
+  return { ...t, bracket_generated: Boolean(t.bracket_generated) };
+}
+
 router.get('/', (req, res) => {
   const { status } = req.query;
   let rows;
@@ -19,7 +25,7 @@ router.get('/', (req, res) => {
     rows = db.prepare('SELECT * FROM tournaments ORDER BY created_at DESC').all();
   }
   const withCounts = rows.map((t) => ({
-    ...t,
+    ...publicTournament(t),
     participant_count: db
       .prepare('SELECT COUNT(*) AS c FROM tournament_participants WHERE tournament_id = ?')
       .get(t.id).c,
@@ -46,11 +52,12 @@ router.get('/:id', (req, res) => {
        LEFT JOIN users au ON au.id = m.away_user_id
        WHERE m.tournament_id = ? ORDER BY m.round, m.bracket_slot, m.scheduled_at`
     )
-    .all(req.params.id);
+    .all(req.params.id)
+    .map((m) => ({ ...m, is_bye: Boolean(m.is_bye) }));
 
   const standings = tournament.type === 'league' && tournament.bracket_generated ? computeStandings(tournament.id) : null;
 
-  res.json({ tournament, participants, matches, standings });
+  res.json({ tournament: publicTournament(tournament), participants, matches, standings });
 });
 
 router.post('/', requireAuth, requireAdmin, (req, res) => {
@@ -81,7 +88,7 @@ router.post('/', requireAuth, requireAdmin, (req, res) => {
     );
 
   const tournament = db.prepare('SELECT * FROM tournaments WHERE id = ?').get(info.lastInsertRowid);
-  res.status(201).json({ tournament });
+  res.status(201).json({ tournament: publicTournament(tournament) });
 });
 
 router.put('/:id', requireAuth, requireAdmin, (req, res) => {
@@ -105,7 +112,7 @@ router.put('/:id', requireAuth, requireAdmin, (req, res) => {
   );
 
   const tournament = db.prepare('SELECT * FROM tournaments WHERE id = ?').get(req.params.id);
-  res.json({ tournament });
+  res.json({ tournament: publicTournament(tournament) });
 });
 
 router.delete('/:id', requireAuth, requireAdmin, (req, res) => {
@@ -173,7 +180,8 @@ router.post('/:id/generate-bracket', requireAuth, requireAdmin, (req, res) => {
 
   const matches = db
     .prepare('SELECT * FROM matches WHERE tournament_id = ? ORDER BY round, bracket_slot')
-    .all(tournament.id);
+    .all(tournament.id)
+    .map((m) => ({ ...m, is_bye: Boolean(m.is_bye) }));
   res.status(201).json({ matches });
 });
 
