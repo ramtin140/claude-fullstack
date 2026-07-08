@@ -264,3 +264,16 @@ if (!ticketToTomanRate) {
   db.prepare("INSERT INTO app_settings (key, value) VALUES ('ticket_to_toman_rate', '10000')").run();
   console.log('Seeded default ticket-to-toman withdrawal rate (10,000 per ticket).');
 }
+
+const paymentMethodCount = db.prepare('SELECT COUNT(*) AS c FROM payment_methods').get().c;
+if (paymentMethodCount === 0) {
+  db.prepare(
+    `INSERT INTO payment_methods (type, title, card_number, card_holder_name, fee_percent, fee_fixed, min_amount, sort_order)
+     VALUES ('card_to_card', 'کارت به کارت', '6037-9975-1234-5678', 'مدیریت فیفاسول', 1.5, 0, 20000, 0)`
+  ).run();
+  db.prepare(
+    `INSERT INTO payment_methods (type, title, iban, account_holder_name, bank_name, fee_percent, fee_fixed, min_amount, sort_order)
+     VALUES ('bank_account', 'واریز به حساب بانکی', 'IR820540102680020817909002', 'مدیریت فیفاسول', 'بانک پاسارگاد', 0, 0, 20000, 1)`
+  ).run();
+  console.log('Seeded default payment methods (card-to-card, bank account).');
+}

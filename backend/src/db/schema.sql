@@ -266,3 +266,43 @@ CREATE TABLE IF NOT EXISTS goal_clips (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   resolved_at TEXT
 );
+
+-- Admin-managed deposit channels shown to members on the wallet charge form.
+-- 'card_to_card' shows card_number/card_holder_name; 'bank_account' shows
+-- iban/account_holder_name/bank_name. Fee is deducted from the credited
+-- amount, not added on top, so it doubles as the platform's commission rule.
+CREATE TABLE IF NOT EXISTS payment_methods (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL, -- 'card_to_card' | 'bank_account'
+  title TEXT NOT NULL,
+  card_number TEXT,
+  card_holder_name TEXT,
+  iban TEXT,
+  account_holder_name TEXT,
+  bank_name TEXT,
+  instructions TEXT,
+  fee_percent REAL NOT NULL DEFAULT 0,
+  fee_fixed INTEGER NOT NULL DEFAULT 0,
+  min_amount INTEGER NOT NULL DEFAULT 0,
+  max_amount INTEGER,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Wallet charge (deposit) requests — unlike withdrawals, tickets are only
+-- credited once an admin actually verifies the transfer receipt and approves.
+CREATE TABLE IF NOT EXISTS deposit_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  payment_method_id INTEGER NOT NULL REFERENCES payment_methods(id),
+  cash_amount INTEGER NOT NULL,
+  fee_amount INTEGER NOT NULL DEFAULT 0,
+  ticket_amount INTEGER NOT NULL,
+  reference_note TEXT,
+  receipt_url TEXT,
+  status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'approved' | 'rejected'
+  admin_notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  resolved_at TEXT
+);

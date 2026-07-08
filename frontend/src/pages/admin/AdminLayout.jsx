@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Trophy, Swords, Newspaper, Users, Sliders, Gavel, DollarSign, LifeBuoy, Banknote, Film } from 'lucide-react';
+import { LayoutDashboard, Trophy, Swords, Newspaper, Users, Sliders, Gavel, DollarSign, LifeBuoy, Banknote, Film, CreditCard, Wallet as WalletIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useRealtime } from '../../context/RealtimeContext.jsx';
 import { hasStaffAccess } from '../../components/ProtectedRoute.jsx';
@@ -16,6 +16,8 @@ const links = [
   { to: '/admin/economy', label: 'اقتصاد و گریدبندی', icon: DollarSign, roles: ['senior_admin'] },
   { to: '/admin/support', label: 'تیکت‌های پشتیبانی', icon: LifeBuoy, roles: ['senior_admin', 'writer'], dotKey: 'openSupportTickets' },
   { to: '/admin/withdrawals', label: 'درخواست‌های برداشت', icon: Banknote, roles: ['senior_admin'], dotKey: 'pendingWithdrawals' },
+  { to: '/admin/deposits', label: 'درخواست‌های شارژ', icon: WalletIcon, roles: ['senior_admin'], dotKey: 'pendingDeposits' },
+  { to: '/admin/payment-methods', label: 'روش‌های شارژ', icon: CreditCard, roles: ['senior_admin'] },
   { to: '/admin/goal-clips', label: 'کلیپ‌های گل', icon: Film, roles: ['senior_admin'], dotKey: 'pendingGoalClips' },
 ];
 

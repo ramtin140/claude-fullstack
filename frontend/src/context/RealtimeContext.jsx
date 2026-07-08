@@ -18,6 +18,7 @@ export function RealtimeProvider({ children }) {
   const [expertQueueCount, setExpertQueueCount] = useState(0);
   const [pendingWithdrawals, setPendingWithdrawals] = useState(0);
   const [pendingGoalClips, setPendingGoalClips] = useState(0);
+  const [pendingDeposits, setPendingDeposits] = useState(0);
   const [openSupportTickets, setOpenSupportTickets] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [socket, setSocket] = useState(null);
@@ -43,6 +44,7 @@ export function RealtimeProvider({ children }) {
       setExpertQueueCount(0);
       setPendingWithdrawals(0);
       setPendingGoalClips(0);
+      setPendingDeposits(0);
       setOpenSupportTickets(0);
       setNotifications([]);
       setUnreadMessages(0);
@@ -67,6 +69,7 @@ export function RealtimeProvider({ children }) {
     s.on('expert_queue:update', ({ count }) => setExpertQueueCount(count));
     s.on('withdrawals:update', ({ count }) => setPendingWithdrawals(count));
     s.on('goal_clips:update', ({ count }) => setPendingGoalClips(count));
+    s.on('deposits:update', ({ count }) => setPendingDeposits(count));
     s.on('support:update', ({ count }) => setOpenSupportTickets(count));
 
     return () => s.disconnect();
@@ -84,6 +87,7 @@ export function RealtimeProvider({ children }) {
         expertQueueCount,
         pendingWithdrawals,
         pendingGoalClips,
+        pendingDeposits,
         openSupportTickets,
         unreadMessages,
         setUnreadMessages,

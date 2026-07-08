@@ -32,6 +32,7 @@ export function initRealtime(httpServer) {
       socket.join('finance_admins');
       socket.emit('withdrawals:update', { count: getPendingWithdrawalsCount() });
       socket.emit('goal_clips:update', { count: getPendingGoalClipsCount() });
+      socket.emit('deposits:update', { count: getPendingDepositsCount() });
     }
     if (payload.role === 'senior_admin' || payload.role === 'writer') {
       socket.join('content_managers');
@@ -58,6 +59,10 @@ function getOpenSupportCount() {
   return db.prepare("SELECT COUNT(*) AS c FROM support_tickets WHERE status = 'open'").get().c;
 }
 
+function getPendingDepositsCount() {
+  return db.prepare("SELECT COUNT(*) AS c FROM deposit_requests WHERE status = 'pending'").get().c;
+}
+
 export function emitToUser(userId, event, payload) {
   io?.to(`user:${userId}`).emit(event, payload);
 }
@@ -76,4 +81,8 @@ export function emitGoalClipsUpdate() {
 
 export function emitSupportUpdate() {
   io?.to('content_managers').emit('support:update', { count: getOpenSupportCount() });
+}
+
+export function emitDepositsUpdate() {
+  io?.to('finance_admins').emit('deposits:update', { count: getPendingDepositsCount() });
 }

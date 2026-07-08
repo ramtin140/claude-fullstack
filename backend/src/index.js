@@ -26,6 +26,8 @@ import messagesRoutes from './routes/messages.js';
 import supportRoutes from './routes/support.js';
 import withdrawalsRoutes from './routes/withdrawals.js';
 import goalClipsRoutes from './routes/goal-clips.js';
+import paymentMethodsRoutes from './routes/payment-methods.js';
+import depositsRoutes from './routes/deposits.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -59,6 +61,8 @@ app.use('/api/messages', messagesRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/withdrawals', withdrawalsRoutes);
 app.use('/api/goal-clips', goalClipsRoutes);
+app.use('/api/payment-methods', paymentMethodsRoutes);
+app.use('/api/deposits', depositsRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'مسیر یافت نشد.' }));
 
