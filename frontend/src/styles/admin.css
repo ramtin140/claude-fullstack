@@ -28,6 +28,35 @@
   font-size: 0.9rem;
 }
 
+.admin-link-icon {
+  position: relative;
+  display: inline-flex;
+}
+
+.admin-alert-dot {
+  position: absolute;
+  top: -3px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff3b5c;
+  box-shadow: 0 0 0 2px var(--bg-darker), 0 0 8px rgba(255, 59, 92, 0.8);
+  animation: admin-dot-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes admin-dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.25);
+  }
+}
+
 .admin-sidebar a:hover,
 .admin-sidebar a.active {
   background: rgba(242, 183, 5, 0.1);

@@ -58,39 +58,93 @@ export default function App() {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/u/:id" element={<PublicProfile />} />
-        <Route path="/h2h" element={<H2HList />} />
-        <Route path="/h2h/:id" element={<H2HDetail />} />
-        <Route
-          path="/h2h/new"
-          element={
-            <ProtectedRoute>
-              <H2HCreate />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/support/:id"
-          element={
-            <ProtectedRoute>
-              <SupportDetail />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          element={
-            <ProtectedRoute>
-              <MemberLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/wallet" element={<Wallet />} />
-          <Route path="/players" element={<PlayerSearch />} />
-          <Route path="/messages" element={<MessagesInbox />} />
-          <Route path="/messages/:userId" element={<MessageThread />} />
-          <Route path="/support" element={<SupportPage />} />
-          <Route path="/goal-clips" element={<GoalClips />} />
+        {/* Member shell renders its sidebar/mobile tabbar only when logged
+            in, so /h2h and /support/:id stay reachable by guests too without
+            losing the surrounding chrome for members who navigate there from
+            their own dashboard. */}
+        <Route element={<MemberLayout />}>
+          <Route path="/h2h" element={<H2HList />} />
+          <Route path="/h2h/:id" element={<H2HDetail />} />
+          <Route
+            path="/h2h/new"
+            element={
+              <ProtectedRoute>
+                <H2HCreate />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/support/:id"
+            element={
+              <ProtectedRoute>
+                <SupportDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/wallet"
+            element={
+              <ProtectedRoute>
+                <Wallet />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/players"
+            element={
+              <ProtectedRoute>
+                <PlayerSearch />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/messages"
+            element={
+              <ProtectedRoute>
+                <MessagesInbox />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/messages/:userId"
+            element={
+              <ProtectedRoute>
+                <MessageThread />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/support"
+            element={
+              <ProtectedRoute>
+                <SupportPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/goal-clips"
+            element={
+              <ProtectedRoute>
+                <GoalClips />
+              </ProtectedRoute>
+            }
+          />
         </Route>
         <Route
           path="/admin"

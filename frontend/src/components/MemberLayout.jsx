@@ -43,6 +43,13 @@ export default function MemberLayout() {
   const [moreOpen, setMoreOpen] = useState(false);
   const unreadMessages = realtime?.unreadMessages ?? 0;
 
+  // Some routes nested here (e.g. /h2h, /support/:id) are also reachable by
+  // guests directly, so this shell only puts on its sidebar/tabbar chrome
+  // once someone's actually logged in — otherwise it's just the outlet.
+  if (!user) {
+    return <Outlet />;
+  }
+
   return (
     <div className="member-layout">
       <aside className="member-sidebar">

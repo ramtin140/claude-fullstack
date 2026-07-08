@@ -9,6 +9,8 @@ const evidenceDir = path.join(uploadsDir, 'evidence');
 if (!fs.existsSync(evidenceDir)) fs.mkdirSync(evidenceDir, { recursive: true });
 const avatarDir = path.join(uploadsDir, 'avatars');
 if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir, { recursive: true });
+const receiptDir = path.join(uploadsDir, 'receipts');
+if (!fs.existsSync(receiptDir)) fs.mkdirSync(receiptDir, { recursive: true });
 
 const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'application/pdf']);
 const ALLOWED_IMAGE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
@@ -63,4 +65,30 @@ export const uploadAvatar = multer({
 
 export function publicAvatarUrl(filename) {
   return `/uploads/avatars/${filename}`;
+}
+
+const receiptStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, receiptDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '';
+    const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
+    cb(null, unique);
+  },
+});
+
+// Payout receipt/proof-of-transfer that an admin can optionally attach when
+// marking a ticket-withdrawal request as paid.
+export const uploadReceipt = multer({
+  storage: receiptStorage,
+  limits: { fileSize: MAX_SIZE_BYTES },
+  fileFilter: (req, file, cb) => {
+    if (!ALLOWED_MIME.has(file.mimetype)) {
+      return cb(new Error('فقط فایل عکس (PNG/JPEG/WebP) یا PDF مجاز است.'));
+    }
+    cb(null, true);
+  },
+}).single('receipt_file');
+
+export function publicReceiptUrl(filename) {
+  return `/uploads/receipts/${filename}`;
 }

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../db/index.js';
 import { requireAuth, requireContentManager } from '../middleware/auth.js';
 import { notifyUser } from '../services/notifications.js';
+import { emitSupportUpdate } from '../services/realtime.js';
 
 const router = Router();
 
@@ -69,6 +70,7 @@ router.post('/', requireAuth, (req, res) => {
     body.trim()
   );
 
+  emitSupportUpdate();
   res.status(201).json({ ticket: db.prepare('SELECT * FROM support_tickets WHERE id = ?').get(info.lastInsertRowid) });
 });
 
@@ -116,6 +118,7 @@ router.post('/:id/reply', requireAuth, (req, res) => {
   if (isStaff) {
     notifyUser(ticket.user_id, `پشتیبانی به تیکت شما (${ticket.subject}) پاسخ داد.`, 'info', `/support/${ticket.id}`);
   }
+  emitSupportUpdate();
 
   res.json({ ticket: db.prepare('SELECT * FROM support_tickets WHERE id = ?').get(ticket.id) });
 });
@@ -125,6 +128,7 @@ router.post('/:id/close', requireAuth, requireContentManager, (req, res) => {
   if (!ticket) return;
   db.prepare("UPDATE support_tickets SET status = 'closed', updated_at = datetime('now') WHERE id = ?").run(ticket.id);
   notifyUser(ticket.user_id, `تیکت شما (${ticket.subject}) بسته شد.`, 'info', `/support/${ticket.id}`);
+  emitSupportUpdate();
   res.json({ ticket: db.prepare('SELECT * FROM support_tickets WHERE id = ?').get(ticket.id) });
 });
 

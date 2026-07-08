@@ -3,6 +3,8 @@ import { db } from '../db/index.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { adjustWallet } from '../services/wallet.js';
 import { notifyUser } from '../services/notifications.js';
+import { uploadReceipt, publicReceiptUrl } from '../middleware/upload.js';
+import { emitWithdrawalsUpdate } from '../services/realtime.js';
 
 const router = Router();
 
@@ -76,41 +78,61 @@ router.post('/', requireAuth, (req, res) => {
     throw err;
   }
 
+  emitWithdrawalsUpdate();
   res.status(201).json({ request: db.prepare('SELECT * FROM withdrawal_requests WHERE id = ?').get(requestId) });
 });
 
+// multipart/form-data: admin_notes arrives as a string field, an optional
+// receipt_file (transfer proof/فیش) arrives as req.file.
 router.post('/:id/approve', requireAuth, requireAdmin, (req, res) => {
-  const request = db.prepare('SELECT * FROM withdrawal_requests WHERE id = ?').get(req.params.id);
-  if (!request) return res.status(404).json({ error: 'درخواست یافت نشد.' });
-  if (request.status !== 'pending') return res.status(409).json({ error: 'این درخواست قبلاً بررسی شده است.' });
+  uploadReceipt(req, res, (uploadErr) => {
+    if (uploadErr) return res.status(400).json({ error: uploadErr.message });
 
-  db.prepare("UPDATE withdrawal_requests SET status = 'paid', resolved_at = datetime('now') WHERE id = ?").run(request.id);
-  notifyUser(
-    request.user_id,
-    `درخواست برداشت شما به مبلغ ${request.cash_amount.toLocaleString('fa-IR')} تومان پرداخت شد.`,
-    'success',
-    '/wallet'
-  );
+    const request = db.prepare('SELECT * FROM withdrawal_requests WHERE id = ?').get(req.params.id);
+    if (!request) return res.status(404).json({ error: 'درخواست یافت نشد.' });
+    if (request.status !== 'pending') return res.status(409).json({ error: 'این درخواست قبلاً بررسی شده است.' });
 
-  res.json({ request: db.prepare('SELECT * FROM withdrawal_requests WHERE id = ?').get(request.id) });
+    const receiptUrl = req.file ? publicReceiptUrl(req.file.filename) : null;
+    db.prepare(
+      `UPDATE withdrawal_requests SET status = 'paid', admin_notes = ?, receipt_url = ?, resolved_at = datetime('now') WHERE id = ?`
+    ).run(req.body.admin_notes || null, receiptUrl, request.id);
+
+    notifyUser(
+      request.user_id,
+      `درخواست برداشت شما به مبلغ ${request.cash_amount.toLocaleString('fa-IR')} تومان پرداخت شد.`,
+      'success',
+      '/wallet'
+    );
+    emitWithdrawalsUpdate();
+
+    res.json({ request: db.prepare('SELECT * FROM withdrawal_requests WHERE id = ?').get(request.id) });
+  });
 });
 
 router.post('/:id/reject', requireAuth, requireAdmin, (req, res) => {
-  const request = db.prepare('SELECT * FROM withdrawal_requests WHERE id = ?').get(req.params.id);
-  if (!request) return res.status(404).json({ error: 'درخواست یافت نشد.' });
-  if (request.status !== 'pending') return res.status(409).json({ error: 'این درخواست قبلاً بررسی شده است.' });
+  uploadReceipt(req, res, (uploadErr) => {
+    if (uploadErr) return res.status(400).json({ error: uploadErr.message });
 
-  const tx = db.transaction(() => {
-    adjustWallet(request.user_id, 'ticket', request.ticket_amount, 'withdrawal_refund', 'withdrawal_request', request.id);
-    db.prepare(
-      `UPDATE withdrawal_requests SET status = 'rejected', admin_notes = ?, resolved_at = datetime('now') WHERE id = ?`
-    ).run(req.body.admin_notes || null, request.id);
+    const request = db.prepare('SELECT * FROM withdrawal_requests WHERE id = ?').get(req.params.id);
+    if (!request) return res.status(404).json({ error: 'درخواست یافت نشد.' });
+    if (request.status !== 'pending') return res.status(409).json({ error: 'این درخواست قبلاً بررسی شده است.' });
+
+    const adminNotes = (req.body.admin_notes || '').trim();
+    if (!adminNotes) return res.status(400).json({ error: 'لطفاً دلیل رد درخواست را بنویسید.' });
+
+    const tx = db.transaction(() => {
+      adjustWallet(request.user_id, 'ticket', request.ticket_amount, 'withdrawal_refund', 'withdrawal_request', request.id);
+      db.prepare(
+        `UPDATE withdrawal_requests SET status = 'rejected', admin_notes = ?, resolved_at = datetime('now') WHERE id = ?`
+      ).run(adminNotes, request.id);
+    });
+    tx();
+
+    notifyUser(request.user_id, `درخواست برداشت تیکت شما رد شد: ${adminNotes}`, 'warning', '/wallet');
+    emitWithdrawalsUpdate();
+
+    res.json({ request: db.prepare('SELECT * FROM withdrawal_requests WHERE id = ?').get(request.id) });
   });
-  tx();
-
-  notifyUser(request.user_id, 'درخواست برداشت تیکت شما رد شد و تیکت‌ها به کیف پول شما بازگشت.', 'warning', '/wallet');
-
-  res.json({ request: db.prepare('SELECT * FROM withdrawal_requests WHERE id = ?').get(request.id) });
 });
 
 export default router;

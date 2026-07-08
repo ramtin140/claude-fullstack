@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Coins, Zap, Banknote } from 'lucide-react';
-import { api } from '../api/client.js';
+import { Coins, Zap, Banknote, Paperclip } from 'lucide-react';
+import { api, assetUrl } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { formatDateTime } from '../utils/datetime.js';
 import '../styles/pages.css';
@@ -79,11 +79,29 @@ function WithdrawalSection({ ticketBalance, iban, refreshWallet }) {
       {requests.length > 0 && (
         <div style={{ marginTop: 18 }}>
           {requests.map((r) => (
-            <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-soft)', fontSize: '0.85rem' }}>
-              <span>
-                {r.ticket_amount} تیکت ({r.cash_amount.toLocaleString('fa-IR')} تومان) — {formatDateTime(r.created_at)}
-              </span>
-              <span className={`badge ${withdrawalStatusBadge[r.status]}`}>{withdrawalStatusLabel[r.status]}</span>
+            <div key={r.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border-soft)', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                <span>
+                  {r.ticket_amount} تیکت ({r.cash_amount.toLocaleString('fa-IR')} تومان) — {formatDateTime(r.created_at)}
+                </span>
+                <span className={`badge ${withdrawalStatusBadge[r.status]}`}>{withdrawalStatusLabel[r.status]}</span>
+              </div>
+              {r.admin_notes && (
+                <div style={{ color: 'var(--text-muted)', marginTop: 6 }}>
+                  یادداشت مدیر: {r.admin_notes}
+                </div>
+              )}
+              {r.receipt_url && (
+                <a
+                  href={assetUrl(r.receipt_url)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="badge badge-waiting"
+                  style={{ marginTop: 6, display: 'inline-flex', gap: 4 }}
+                >
+                  <Paperclip size={12} /> مشاهده فیش پرداخت
+                </a>
+              )}
             </div>
           ))}
         </div>

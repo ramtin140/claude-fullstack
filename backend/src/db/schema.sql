@@ -247,6 +247,7 @@ CREATE TABLE IF NOT EXISTS withdrawal_requests (
   card_number TEXT,
   status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'paid' | 'rejected'
   admin_notes TEXT,
+  receipt_url TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   resolved_at TEXT
 );

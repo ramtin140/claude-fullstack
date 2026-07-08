@@ -16,6 +16,9 @@ export function RealtimeProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [expertQueueCount, setExpertQueueCount] = useState(0);
+  const [pendingWithdrawals, setPendingWithdrawals] = useState(0);
+  const [pendingGoalClips, setPendingGoalClips] = useState(0);
+  const [openSupportTickets, setOpenSupportTickets] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [socket, setSocket] = useState(null);
   const socketRef = useRef(null);
@@ -38,6 +41,9 @@ export function RealtimeProvider({ children }) {
       socketRef.current = null;
       setSocket(null);
       setExpertQueueCount(0);
+      setPendingWithdrawals(0);
+      setPendingGoalClips(0);
+      setOpenSupportTickets(0);
       setNotifications([]);
       setUnreadMessages(0);
       return;
@@ -59,6 +65,9 @@ export function RealtimeProvider({ children }) {
     });
     s.on('message:new', () => setUnreadMessages((c) => c + 1));
     s.on('expert_queue:update', ({ count }) => setExpertQueueCount(count));
+    s.on('withdrawals:update', ({ count }) => setPendingWithdrawals(count));
+    s.on('goal_clips:update', ({ count }) => setPendingGoalClips(count));
+    s.on('support:update', ({ count }) => setOpenSupportTickets(count));
 
     return () => s.disconnect();
   }, [user?.id]);
@@ -67,7 +76,19 @@ export function RealtimeProvider({ children }) {
 
   return (
     <RealtimeContext.Provider
-      value={{ toasts, notifications, unreadCount, markAllRead, expertQueueCount, unreadMessages, setUnreadMessages, socket }}
+      value={{
+        toasts,
+        notifications,
+        unreadCount,
+        markAllRead,
+        expertQueueCount,
+        pendingWithdrawals,
+        pendingGoalClips,
+        openSupportTickets,
+        unreadMessages,
+        setUnreadMessages,
+        socket,
+      }}
     >
       {children}
     </RealtimeContext.Provider>

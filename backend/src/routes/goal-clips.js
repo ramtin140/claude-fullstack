@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { db } from '../db/index.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { notifyUser } from '../services/notifications.js';
+import { emitGoalClipsUpdate } from '../services/realtime.js';
 
 const router = Router();
 
@@ -43,6 +44,7 @@ router.post('/', requireAuth, (req, res) => {
     .prepare('INSERT INTO goal_clips (user_id, clip_url, description) VALUES (?, ?, ?)')
     .run(req.user.id, clip_url.trim(), description || null);
 
+  emitGoalClipsUpdate();
   res.status(201).json({ clip: db.prepare('SELECT * FROM goal_clips WHERE id = ?').get(info.lastInsertRowid) });
 });
 
@@ -57,6 +59,7 @@ router.post('/:id/approve', requireAuth, requireAdmin, (req, res) => {
   ).run(code, clip.id);
 
   notifyUser(clip.user_id, `کلیپ گل شما تایید شد! کد تخفیف شما: ${code}`, 'success', '/goal-clips');
+  emitGoalClipsUpdate();
 
   res.json({ clip: db.prepare('SELECT * FROM goal_clips WHERE id = ?').get(clip.id) });
 });
@@ -71,6 +74,7 @@ router.post('/:id/reject', requireAuth, requireAdmin, (req, res) => {
   ).run(req.body.admin_notes || null, clip.id);
 
   notifyUser(clip.user_id, 'متأسفانه کلیپ گل شما تایید نشد.', 'warning', '/goal-clips');
+  emitGoalClipsUpdate();
 
   res.json({ clip: db.prepare('SELECT * FROM goal_clips WHERE id = ?').get(clip.id) });
 });

@@ -80,6 +80,8 @@ addColumnsIfMissing('tournaments', [
   ['bracket_generated', 'INTEGER NOT NULL DEFAULT 0'],
 ]);
 
+addColumnsIfMissing('withdrawal_requests', [['receipt_url', 'TEXT']]);
+
 addColumnsIfMissing('matches', [
   ['round', 'INTEGER'],
   ['bracket_slot', 'INTEGER'],
