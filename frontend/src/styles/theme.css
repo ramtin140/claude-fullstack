@@ -15,6 +15,8 @@
   --border-soft: rgba(255, 255, 255, 0.08);
   --radius: 14px;
   --shadow-glow: 0 0 0 1px rgba(242, 183, 5, 0.15), 0 12px 30px rgba(0, 0, 0, 0.45);
+  --navbar-h: 70px;
+  --mobile-tabbar-h: 64px;
 }
 
 * {

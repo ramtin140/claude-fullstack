@@ -62,6 +62,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
+}
+
+.user-chip-name-text,
+.logout-btn-text {
+  white-space: nowrap;
 }
 
 .nav-toggle {
@@ -106,12 +112,59 @@
     flex-direction: column;
     padding: 12px 20px;
     border-bottom: 1px solid var(--border-soft);
+    z-index: 60;
   }
   .nav-links.open {
     display: flex;
   }
   .nav-toggle {
     display: inline-flex;
+  }
+
+  .container {
+    padding: 0 14px;
+  }
+
+  .navbar-inner {
+    gap: 10px;
+    padding: 10px 0;
+  }
+
+  .nav-actions {
+    gap: 6px;
+  }
+
+  .user-chip {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .btn {
+    padding: 9px 16px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .brand-text {
+    display: none;
+  }
+
+  .user-chip-name-text,
+  .logout-btn-text {
+    display: none;
+  }
+
+  .user-chip-name {
+    padding: 6px;
+  }
+
+  .logout-btn {
+    padding: 8px;
+  }
+
+  .navbar-avatar-link {
+    display: none;
   }
 }
 

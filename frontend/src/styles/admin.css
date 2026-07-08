@@ -1,10 +1,15 @@
 .admin-layout {
   display: grid;
   grid-template-columns: 220px 1fr;
+  align-items: start;
   min-height: calc(100vh - 130px);
 }
 
 .admin-sidebar {
+  position: sticky;
+  top: var(--navbar-h);
+  height: calc(100vh - var(--navbar-h));
+  overflow-y: auto;
   background: var(--bg-darker);
   border-left: 1px solid var(--border-soft);
   padding: 24px 14px;
@@ -31,6 +36,7 @@
 
 .admin-content {
   padding: 30px;
+  min-width: 0;
 }
 
 .admin-header {
@@ -153,9 +159,25 @@
     grid-template-columns: 1fr;
   }
   .admin-sidebar {
+    position: sticky;
+    top: var(--navbar-h);
+    height: auto;
+    z-index: 40;
     flex-direction: row;
     overflow-x: auto;
+    overflow-y: visible;
     border-left: none;
     border-bottom: 1px solid var(--border-soft);
+  }
+  .admin-sidebar a {
+    white-space: nowrap;
+  }
+  .admin-content {
+    padding: 18px 14px;
+  }
+  .admin-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
   }
 }

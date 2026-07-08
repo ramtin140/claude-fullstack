@@ -1,10 +1,15 @@
 .member-layout {
   display: grid;
   grid-template-columns: 240px 1fr;
+  align-items: start;
   min-height: calc(100vh - 130px);
 }
 
 .member-sidebar {
+  position: sticky;
+  top: var(--navbar-h);
+  height: calc(100vh - var(--navbar-h));
+  overflow-y: auto;
   background: var(--bg-darker);
   border-left: 1px solid var(--border-soft);
   padding: 24px 14px;
@@ -67,21 +72,17 @@
 
 .member-content {
   padding: 0;
+  min-width: 0;
 }
 
-.member-sidebar-toggle {
+/* Mobile bottom tab bar (Telegram/Instagram style) */
+.mobile-tabbar {
   display: none;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px;
-  background: var(--bg-darker);
-  border: none;
-  border-bottom: 1px solid var(--border-soft);
-  color: var(--gold);
-  font-size: 0.85rem;
-  cursor: pointer;
+}
+
+.mobile-more-overlay,
+.mobile-more-sheet {
+  display: none;
 }
 
 @media (max-width: 800px) {
@@ -89,17 +90,161 @@
     grid-template-columns: 1fr;
   }
 
-  .member-sidebar-toggle {
-    display: flex;
-  }
-
   .member-sidebar {
     display: none;
-    border-left: none;
-    border-bottom: 1px solid var(--border-soft);
   }
 
-  .member-sidebar.open {
+  .member-content {
+    padding-bottom: calc(var(--mobile-tabbar-h) + 22px);
+  }
+
+  .mobile-tabbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 70;
     display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    height: var(--mobile-tabbar-h);
+    padding: 6px 4px calc(env(safe-area-inset-bottom, 0px) + 4px);
+    background: rgba(13, 6, 22, 0.96);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .mobile-tab {
+    appearance: none;
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    flex: 1;
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    padding: 4px 2px;
+    cursor: pointer;
+  }
+
+  .mobile-tab.active,
+  .mobile-tab-more.active {
+    color: var(--gold);
+  }
+
+  .mobile-tab-icon-wrap {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .mobile-tab-badge {
+    position: absolute;
+    top: -6px;
+    left: -10px;
+    background: var(--magenta-light);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    min-width: 15px;
+    height: 15px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+  }
+
+  .mobile-tab-center {
+    position: relative;
+    margin-top: -26px;
+  }
+
+  .mobile-tab-center-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--gold-light), var(--gold));
+    color: var(--bg-darker);
+    box-shadow: 0 6px 18px rgba(242, 183, 5, 0.45), 0 0 0 4px var(--bg-dark);
+    margin-bottom: 2px;
+  }
+
+  .mobile-tab-center span:last-child {
+    color: var(--gold);
+  }
+
+  .mobile-more-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 71;
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .mobile-more-sheet {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    bottom: var(--mobile-tabbar-h);
+    left: 0;
+    right: 0;
+    z-index: 72;
+    background: var(--bg-darker);
+    border-top: 1px solid var(--border-soft);
+    border-radius: 18px 18px 0 0;
+    padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 10px);
+    box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.45);
+  }
+
+  .mobile-more-sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 4px 12px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .mobile-more-sheet-header button {
+    appearance: none;
+    background: var(--card-bg);
+    border: none;
+    color: var(--text-light);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .mobile-more-sheet-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding-bottom: 4px;
+  }
+
+  .mobile-more-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 12px;
+    background: var(--card-bg);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  .mobile-more-link.active {
+    color: var(--gold);
+    background: rgba(242, 183, 5, 0.1);
   }
 }

@@ -30,7 +30,7 @@ export default function Navbar() {
       <div className="container navbar-inner">
         <Link to="/" className="brand">
           <span className="brand-badge">S</span>
-          FIFA SOUL
+          <span className="brand-text">FIFA SOUL</span>
         </Link>
 
         <nav className={`nav-links ${open ? 'open' : ''}`} onClick={() => setOpen(false)}>
@@ -51,11 +51,11 @@ export default function Navbar() {
               </Link>
               <Link
                 to={isStaff(user) ? '/admin' : '/dashboard'}
-                className="user-chip"
+                className="user-chip user-chip-name"
                 title={user.name}
               >
                 {isStaff(user) ? <ShieldCheck size={16} /> : <User size={16} />}
-                {user.name}
+                <span className="user-chip-name-text">{user.name}</span>
                 {showExpertBadge && (
                   <span className="expert-badge" title="مسابقات در صف بررسی کارشناسی">
                     {realtime.expertQueueCount}
@@ -70,14 +70,15 @@ export default function Navbar() {
                 )}
               </Link>
               <button
-                className="btn btn-outline"
+                className="btn btn-outline logout-btn"
                 onClick={() => {
                   logout();
                   navigate('/');
                 }}
+                title="خروج"
               >
                 <LogOut size={16} />
-                خروج
+                <span className="logout-btn-text">خروج</span>
               </button>
             </>
           ) : (
