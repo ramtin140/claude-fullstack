@@ -102,4 +102,62 @@ router.put('/ticket-to-toman-rate', requireAuth, requireAdmin, (req, res) => {
   res.json({ rate });
 });
 
+router.get('/h2h-fee-percent', requireAuth, requireAdmin, (req, res) => {
+  const row = db.prepare("SELECT value FROM app_settings WHERE key = 'h2h_platform_fee_percent'").get();
+  res.json({ fee_percent: Number(row?.value ?? 30) });
+});
+
+router.put('/h2h-fee-percent', requireAuth, requireAdmin, (req, res) => {
+  const { fee_percent } = req.body;
+  if (typeof fee_percent !== 'number' || fee_percent < 0 || fee_percent > 100) {
+    return res.status(400).json({ error: 'درصد کارمزد باید عددی بین ۰ تا ۱۰۰ باشد.' });
+  }
+  db.prepare(
+    "INSERT INTO app_settings (key, value) VALUES ('h2h_platform_fee_percent', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+  ).run(String(fee_percent));
+  res.json({ fee_percent });
+});
+
+// "درآمد و بازی‌ها" — every ticket-staked h2h match that finished with a
+// winner, plus how much of the pot the platform withheld. Matches finished
+// before this feature existed have platform_fee_amount = NULL (nothing was
+// actually withheld from them, so they're shown but contribute 0 to totals).
+router.get('/revenue', requireAuth, requireAdmin, (req, res) => {
+  const feePercentRow = db.prepare("SELECT value FROM app_settings WHERE key = 'h2h_platform_fee_percent'").get();
+  const feePercent = Number(feePercentRow?.value ?? 30);
+
+  const totals = db
+    .prepare(
+      `SELECT
+         COUNT(*) AS decided_matches,
+         COALESCE(SUM(platform_fee_amount), 0) AS total_revenue,
+         COALESCE(SUM(stake_amount * 2), 0) AS total_pot
+       FROM h2h_matches
+       WHERE status = 'completed' AND stake_type = 'ticket' AND winner_id IS NOT NULL`
+    )
+    .get();
+
+  const matches = db
+    .prepare(
+      `SELECT m.id, m.stake_amount, m.platform_fee_amount, m.completed_at, m.winner_id,
+              creator.name AS creator_name, opponent.name AS opponent_name, winner.name AS winner_name
+       FROM h2h_matches m
+       JOIN users creator ON creator.id = m.creator_id
+       LEFT JOIN users opponent ON opponent.id = m.opponent_id
+       LEFT JOIN users winner ON winner.id = m.winner_id
+       WHERE m.status = 'completed' AND m.stake_type = 'ticket' AND m.winner_id IS NOT NULL
+       ORDER BY m.completed_at DESC
+       LIMIT 200`
+    )
+    .all();
+
+  res.json({
+    fee_percent: feePercent,
+    total_revenue: totals.total_revenue,
+    total_pot: totals.total_pot,
+    decided_matches: totals.decided_matches,
+    matches,
+  });
+});
+
 export default router;

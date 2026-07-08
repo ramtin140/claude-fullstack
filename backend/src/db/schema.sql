@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS h2h_matches (
   status TEXT NOT NULL DEFAULT 'open',
   -- 'open' | 'locked' | 'completed' | 'cancelled'
   winner_id INTEGER REFERENCES users(id),
+  platform_fee_amount INTEGER, -- house cut withheld from the winner's payout (NULL = draw/cancelled/predates the fee feature)
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   locked_at TEXT,
   completed_at TEXT

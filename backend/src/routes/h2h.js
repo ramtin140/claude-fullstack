@@ -144,7 +144,14 @@ function tryFinalizeMatch(matchId) {
       adjustWallet(match.creator_id, 'ticket', match.stake_amount, 'match_refund', 'h2h_match', matchId);
       adjustWallet(match.opponent_id, 'ticket', match.stake_amount, 'match_refund', 'h2h_match', matchId);
     } else {
-      adjustWallet(winnerId, 'ticket', match.stake_amount * 2, 'match_reward', 'h2h_match', matchId);
+      // Platform keeps a cut of the pot (default 30%, i.e. ~15% از هر طرف)
+      // instead of paying the winner the full stake back.
+      const feePercent = Number(getSetting('h2h_platform_fee_percent', '30'));
+      const pot = match.stake_amount * 2;
+      const feeAmount = Math.floor((pot * feePercent) / 100);
+      const payout = pot - feeAmount;
+      adjustWallet(winnerId, 'ticket', payout, 'match_reward', 'h2h_match', matchId);
+      db.prepare('UPDATE h2h_matches SET platform_fee_amount = ? WHERE id = ?').run(feeAmount, matchId);
     }
   }
 

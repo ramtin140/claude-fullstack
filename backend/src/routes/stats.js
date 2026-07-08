@@ -13,6 +13,9 @@ router.get('/', (req, res) => {
   const leagues = db.prepare("SELECT COUNT(*) AS c FROM tournaments WHERE type = 'league'").get().c;
   const cups = db.prepare("SELECT COUNT(*) AS c FROM tournaments WHERE type = 'cup'").get().c;
   const members = db.prepare("SELECT COUNT(*) AS c FROM users WHERE role = 'member'").get().c;
+  const h2hFeePercent = Number(
+    db.prepare("SELECT value FROM app_settings WHERE key = 'h2h_platform_fee_percent'").get()?.value ?? 30
+  );
 
   res.json({
     stats: {
@@ -21,6 +24,7 @@ router.get('/', (req, res) => {
       leagues,
       cups,
       members,
+      h2h_fee_percent: h2hFeePercent,
     },
   });
 });

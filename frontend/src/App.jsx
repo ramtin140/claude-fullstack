@@ -44,6 +44,7 @@ import AdminGoalClips from './pages/admin/AdminGoalClips.jsx';
 import AdminDeposits from './pages/admin/AdminDeposits.jsx';
 import AdminPaymentMethods from './pages/admin/AdminPaymentMethods.jsx';
 import AdminContactMessages from './pages/admin/AdminContactMessages.jsx';
+import AdminRevenue from './pages/admin/AdminRevenue.jsx';
 
 export default function App() {
   return (
@@ -211,6 +212,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={[]}>
                 <AdminEconomy />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="revenue"
+            element={
+              <ProtectedRoute roles={[]}>
+                <AdminRevenue />
               </ProtectedRoute>
             }
           />

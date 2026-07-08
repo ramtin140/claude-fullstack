@@ -12,7 +12,7 @@ const features = [
   { icon: Users, title: 'جامعه‌ای فعال', text: 'صدها گیمر فعال، جستجوی بازیکن و پیام‌رسانی مستقیم برای پیدا کردن حریف بعدی.' },
 ];
 
-function RulesSection() {
+function RulesSection({ h2hFeePercent }) {
   const [rate, setRate] = useState(null);
   const [methods, setMethods] = useState([]);
 
@@ -64,6 +64,11 @@ function RulesSection() {
         <li>در صورت رد درخواست، دلیل آن برای شما ثبت می‌شود؛ در برداشت، تیکت‌های کسرشده بلافاصله به کیف پول بازمی‌گردد.</li>
         <li>کارمزد شارژ از مبلغ واریزی کسر شده و باقی‌مانده بر اساس نرخ روز به تیکت تبدیل می‌شود.</li>
         <li>در اختلافات مسابقات رو-در-رو، تصمیم نهایی بر عهده تیم کارشناسی و بر اساس مستندات ارسالی طرفین است.</li>
+        <li>
+          از مجموع تیکت شرط‌بندی‌شده در هر مسابقه رو-در-رو،{' '}
+          <strong style={{ color: 'var(--gold)' }}>{h2hFeePercent ?? 30}٪</strong> به‌عنوان کارمزد سایت کسر و
+          باقی‌مانده به برنده واریز می‌شود.
+        </li>
       </ul>
     </div>
   );
@@ -112,7 +117,7 @@ export default function About() {
           ))}
         </div>
 
-        <RulesSection />
+        <RulesSection h2hFeePercent={stats?.h2h_fee_percent} />
       </div>
     </div>
   );

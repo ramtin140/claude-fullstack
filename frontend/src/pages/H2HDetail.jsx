@@ -541,6 +541,12 @@ export default function H2HDetail() {
           </div>
         )}
 
+        {match.status === 'completed' && match.winner_id && match.stake_type === 'ticket' && match.platform_fee_amount !== null && (
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: -12, marginBottom: 20 }}>
+            مبلغ واریزی به برنده: {match.stake_amount * 2 - match.platform_fee_amount} تیکت (کارمزد سایت: {match.platform_fee_amount} تیکت)
+          </p>
+        )}
+
         {match.status === 'cancelled' && (
           <div className="winner-banner" style={{ borderColor: 'var(--magenta)', color: 'var(--magenta)' }}>
             <Wifi size={20} style={{ verticalAlign: 'middle', marginLeft: 8 }} />

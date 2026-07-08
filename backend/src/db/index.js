@@ -66,6 +66,7 @@ addColumnsIfMissing('users', [
 addColumnsIfMissing('h2h_matches', [
   ['time_limit_hours', 'INTEGER'],
   ['cancel_reason', 'TEXT'],
+  ['platform_fee_amount', 'INTEGER'],
 ]);
 
 addColumnsIfMissing('h2h_legs', [

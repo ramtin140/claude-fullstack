@@ -277,3 +277,9 @@ if (paymentMethodCount === 0) {
   ).run();
   console.log('Seeded default payment methods (card-to-card, bank account).');
 }
+
+const h2hFeePercent = db.prepare("SELECT value FROM app_settings WHERE key = 'h2h_platform_fee_percent'").get();
+if (!h2hFeePercent) {
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('h2h_platform_fee_percent', '30')").run();
+  console.log('Seeded default H2H platform fee (30% of the pot, i.e. 15% per side).');
+}
