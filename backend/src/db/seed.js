@@ -258,3 +258,9 @@ if (!messagingEnabled) {
   db.prepare("INSERT INTO app_settings (key, value) VALUES ('messaging_enabled', '1')").run();
   console.log('Seeded default messaging_enabled setting (on).');
 }
+
+const ticketToTomanRate = db.prepare("SELECT value FROM app_settings WHERE key = 'ticket_to_toman_rate'").get();
+if (!ticketToTomanRate) {
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('ticket_to_toman_rate', '10000')").run();
+  console.log('Seeded default ticket-to-toman withdrawal rate (10,000 per ticket).');
+}

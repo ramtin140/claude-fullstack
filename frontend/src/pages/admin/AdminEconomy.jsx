@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Search, X } from 'lucide-react';
 import { api } from '../../api/client.js';
 import '../../styles/admin.css';
 
@@ -7,7 +8,10 @@ export default function AdminEconomy() {
   const [vipThreshold, setVipThreshold] = useState(500);
   const [messagingEnabled, setMessagingEnabled] = useState(true);
   const [archive, setArchive] = useState([]);
-  const [walletForm, setWalletForm] = useState({ userId: '', currency: 'ticket', amount: 1, reason: 'admin_adjustment' });
+  const [walletForm, setWalletForm] = useState({ currency: 'ticket', amount: 1, reason: 'admin_adjustment' });
+  const [userQuery, setUserQuery] = useState('');
+  const [userResults, setUserResults] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [seasonName, setSeasonName] = useState('');
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
@@ -59,17 +63,32 @@ export default function AdminEconomy() {
     }
   }
 
+  async function searchUsers(e) {
+    e.preventDefault();
+    if (!userQuery.trim()) return;
+    try {
+      const { data } = await api.get('/users', { params: { query: userQuery } });
+      setUserResults(data.users);
+    } catch {
+      setUserResults([]);
+    }
+  }
+
   async function adjustWallet(e) {
     e.preventDefault();
     setError(null);
     setMessage(null);
+    if (!selectedUser) {
+      setError('لطفاً ابتدا کاربر را از نتایج جستجو انتخاب کنید.');
+      return;
+    }
     try {
-      const { data } = await api.post(`/admin/wallet/${walletForm.userId}/adjust`, {
+      const { data } = await api.post(`/admin/wallet/${selectedUser.id}/adjust`, {
         currency: walletForm.currency,
         amount: Number(walletForm.amount),
         reason: walletForm.reason,
       });
-      setMessage(`موجودی جدید کاربر #${walletForm.userId}: ${data.balance}`);
+      setMessage(`موجودی جدید ${selectedUser.name}: ${data.balance}`);
     } catch (err) {
       setError(err.response?.data?.error || 'خطا در تنظیم کیف پول');
     }
@@ -171,11 +190,61 @@ export default function AdminEconomy() {
 
       <div className="card" style={{ padding: 20, marginBottom: 24 }}>
         <h3 style={{ marginTop: 0, color: 'var(--gold)' }}>شارژ دستی کیف پول</h3>
-        <form onSubmit={adjustWallet} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div className="form-field" style={{ marginBottom: 0 }}>
-            <label>شناسه کاربر</label>
-            <input required value={walletForm.userId} onChange={(e) => setWalletForm({ ...walletForm, userId: e.target.value })} />
+
+        {selectedUser ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-darker)' }}>
+            <span>
+              کاربر انتخاب‌شده: <strong>{selectedUser.name}</strong>{' '}
+              <span style={{ fontFamily: 'monospace', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{selectedUser.fifa_soul_id}</span>
+            </span>
+            <button
+              type="button"
+              className="icon-btn"
+              style={{ marginRight: 'auto' }}
+              onClick={() => {
+                setSelectedUser(null);
+                setUserResults([]);
+                setUserQuery('');
+              }}
+            >
+              <X size={15} />
+            </button>
           </div>
+        ) : (
+          <div style={{ marginBottom: 14 }}>
+            <form onSubmit={searchUsers} style={{ display: 'flex', gap: 10, maxWidth: 420 }}>
+              <input
+                placeholder="جستجو بر اساس نام، ایمیل یا fifa soul ID..."
+                value={userQuery}
+                onChange={(e) => setUserQuery(e.target.value)}
+                style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
+              />
+              <button className="btn btn-outline" type="submit">
+                <Search size={16} />
+              </button>
+            </form>
+            {userResults.length > 0 && (
+              <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 420 }}>
+                {userResults.map((u) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    className="btn btn-outline"
+                    style={{ justifyContent: 'flex-start', textAlign: 'right' }}
+                    onClick={() => {
+                      setSelectedUser(u);
+                      setUserResults([]);
+                    }}
+                  >
+                    {u.name} — <span style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{u.fifa_soul_id}</span> ({u.email})
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <form onSubmit={adjustWallet} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div className="form-field" style={{ marginBottom: 0 }}>
             <label>ارز</label>
             <select value={walletForm.currency} onChange={(e) => setWalletForm({ ...walletForm, currency: e.target.value })}>

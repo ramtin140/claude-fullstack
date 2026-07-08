@@ -234,3 +234,34 @@ CREATE TABLE IF NOT EXISTS support_messages (
   body TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Ticket-to-cash withdrawal requests — tickets are deducted immediately on
+-- request (escrow-style, so the balance can't be double-spent while a
+-- request is pending) and refunded automatically if the admin rejects it.
+CREATE TABLE IF NOT EXISTS withdrawal_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ticket_amount INTEGER NOT NULL,
+  cash_amount INTEGER NOT NULL,
+  iban TEXT NOT NULL,
+  card_number TEXT,
+  status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'paid' | 'rejected'
+  admin_notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  resolved_at TEXT
+);
+
+-- Discount codes earned by submitting a goal-clip link for review — the code
+-- itself doesn't have a redemption flow yet (no shop module exists to spend
+-- it in), it's just generated and shown to the user once approved.
+CREATE TABLE IF NOT EXISTS goal_clips (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  clip_url TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'approved' | 'rejected'
+  discount_code TEXT,
+  admin_notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  resolved_at TEXT
+);

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, User, Wallet as WalletIcon, Swords, Search, Menu, X, MessageCircle, LifeBuoy } from 'lucide-react';
+import { LayoutDashboard, User, Wallet as WalletIcon, Swords, Search, Menu, X, MessageCircle, LifeBuoy, Film } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useRealtime } from '../context/RealtimeContext.jsx';
 import { assetUrl } from '../api/client.js';
@@ -15,6 +15,7 @@ const links = [
   { to: '/players', label: 'جستجوی کاربران', icon: Search },
   { to: '/messages', label: 'پیام‌ها', icon: MessageCircle, badgeKey: 'unreadMessages' },
   { to: '/support', label: 'پشتیبانی', icon: LifeBuoy },
+  { to: '/goal-clips', label: 'کلیپ گل من', icon: Film },
 ];
 
 export default function MemberLayout() {

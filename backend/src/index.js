@@ -24,6 +24,8 @@ import challengesRoutes from './routes/challenges.js';
 import notificationsRoutes from './routes/notifications.js';
 import messagesRoutes from './routes/messages.js';
 import supportRoutes from './routes/support.js';
+import withdrawalsRoutes from './routes/withdrawals.js';
+import goalClipsRoutes from './routes/goal-clips.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -55,6 +57,8 @@ app.use('/api/challenges', challengesRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/withdrawals', withdrawalsRoutes);
+app.use('/api/goal-clips', goalClipsRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'مسیر یافت نشد.' }));
 

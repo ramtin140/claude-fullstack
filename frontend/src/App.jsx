@@ -26,6 +26,7 @@ import MessagesInbox from './pages/MessagesInbox.jsx';
 import MessageThread from './pages/MessageThread.jsx';
 import SupportPage from './pages/SupportPage.jsx';
 import SupportDetail from './pages/SupportDetail.jsx';
+import GoalClips from './pages/GoalClips.jsx';
 import MemberLayout from './components/MemberLayout.jsx';
 
 import AdminLayout from './pages/admin/AdminLayout.jsx';
@@ -38,6 +39,8 @@ import AdminGameOptions from './pages/admin/AdminGameOptions.jsx';
 import AdminExpertQueue from './pages/admin/AdminExpertQueue.jsx';
 import AdminEconomy from './pages/admin/AdminEconomy.jsx';
 import AdminSupport from './pages/admin/AdminSupport.jsx';
+import AdminWithdrawals from './pages/admin/AdminWithdrawals.jsx';
+import AdminGoalClips from './pages/admin/AdminGoalClips.jsx';
 
 export default function App() {
   return (
@@ -87,6 +90,7 @@ export default function App() {
           <Route path="/messages" element={<MessagesInbox />} />
           <Route path="/messages/:userId" element={<MessageThread />} />
           <Route path="/support" element={<SupportPage />} />
+          <Route path="/goal-clips" element={<GoalClips />} />
         </Route>
         <Route
           path="/admin"
@@ -158,6 +162,22 @@ export default function App() {
             element={
               <ProtectedRoute roles={['writer']}>
                 <AdminSupport />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="withdrawals"
+            element={
+              <ProtectedRoute roles={[]}>
+                <AdminWithdrawals />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="goal-clips"
+            element={
+              <ProtectedRoute roles={[]}>
+                <AdminGoalClips />
               </ProtectedRoute>
             }
           />

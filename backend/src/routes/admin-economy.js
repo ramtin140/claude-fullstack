@@ -91,4 +91,15 @@ router.put('/messaging-enabled', requireAuth, requireAdmin, (req, res) => {
   res.json({ messaging_enabled: Boolean(messaging_enabled) });
 });
 
+router.put('/ticket-to-toman-rate', requireAuth, requireAdmin, (req, res) => {
+  const { rate } = req.body;
+  if (!Number.isInteger(rate) || rate < 1) {
+    return res.status(400).json({ error: 'نرخ تبدیل نامعتبر است.' });
+  }
+  db.prepare(
+    "INSERT INTO app_settings (key, value) VALUES ('ticket_to_toman_rate', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+  ).run(String(rate));
+  res.json({ rate });
+});
+
 export default router;
