@@ -43,6 +43,7 @@ import AdminWithdrawals from './pages/admin/AdminWithdrawals.jsx';
 import AdminGoalClips from './pages/admin/AdminGoalClips.jsx';
 import AdminDeposits from './pages/admin/AdminDeposits.jsx';
 import AdminPaymentMethods from './pages/admin/AdminPaymentMethods.jsx';
+import AdminContactMessages from './pages/admin/AdminContactMessages.jsx';
 
 export default function App() {
   return (
@@ -250,6 +251,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={[]}>
                 <AdminPaymentMethods />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="contact-messages"
+            element={
+              <ProtectedRoute roles={['writer']}>
+                <AdminContactMessages />
               </ProtectedRoute>
             }
           />

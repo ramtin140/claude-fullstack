@@ -306,3 +306,14 @@ CREATE TABLE IF NOT EXISTS deposit_requests (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   resolved_at TEXT
 );
+
+-- Public "contact us" form submissions — no login required, so unlike
+-- support_tickets these aren't tied to a user_id and have no reply thread.
+CREATE TABLE IF NOT EXISTS contact_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  message TEXT NOT NULL,
+  is_read INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

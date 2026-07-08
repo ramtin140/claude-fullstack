@@ -12,6 +12,7 @@ router.get('/', (req, res) => {
     .get().c;
   const leagues = db.prepare("SELECT COUNT(*) AS c FROM tournaments WHERE type = 'league'").get().c;
   const cups = db.prepare("SELECT COUNT(*) AS c FROM tournaments WHERE type = 'cup'").get().c;
+  const members = db.prepare("SELECT COUNT(*) AS c FROM users WHERE role = 'member'").get().c;
 
   res.json({
     stats: {
@@ -19,6 +20,7 @@ router.get('/', (req, res) => {
       play_off,
       leagues,
       cups,
+      members,
     },
   });
 });

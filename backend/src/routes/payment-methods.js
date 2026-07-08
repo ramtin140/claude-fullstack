@@ -29,6 +29,19 @@ router.get('/', requireAuth, (req, res) => {
   res.json({ methods });
 });
 
+// Public fee summary for the "قوانین و کارمزدها" section on /about — no
+// card/iban fields exposed here, just the transparency info a visitor
+// (logged in or not) needs before deciding to sign up.
+router.get('/public-summary', (req, res) => {
+  const methods = db
+    .prepare(
+      `SELECT id, type, title, fee_percent, fee_fixed, min_amount, max_amount
+       FROM payment_methods WHERE is_active = 1 ORDER BY sort_order ASC, id ASC`
+    )
+    .all();
+  res.json({ methods });
+});
+
 router.get('/admin/all', requireAuth, requireAdmin, (req, res) => {
   const methods = db.prepare('SELECT * FROM payment_methods ORDER BY sort_order ASC, id ASC').all();
   res.json({ methods });

@@ -37,6 +37,7 @@ export function initRealtime(httpServer) {
     if (payload.role === 'senior_admin' || payload.role === 'writer') {
       socket.join('content_managers');
       socket.emit('support:update', { count: getOpenSupportCount() });
+      socket.emit('contact:update', { count: getUnreadContactCount() });
     }
   });
 
@@ -63,6 +64,10 @@ function getPendingDepositsCount() {
   return db.prepare("SELECT COUNT(*) AS c FROM deposit_requests WHERE status = 'pending'").get().c;
 }
 
+function getUnreadContactCount() {
+  return db.prepare('SELECT COUNT(*) AS c FROM contact_messages WHERE is_read = 0').get().c;
+}
+
 export function emitToUser(userId, event, payload) {
   io?.to(`user:${userId}`).emit(event, payload);
 }
@@ -85,4 +90,8 @@ export function emitSupportUpdate() {
 
 export function emitDepositsUpdate() {
   io?.to('finance_admins').emit('deposits:update', { count: getPendingDepositsCount() });
+}
+
+export function emitContactUpdate() {
+  io?.to('content_managers').emit('contact:update', { count: getUnreadContactCount() });
 }

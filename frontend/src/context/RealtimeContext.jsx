@@ -20,6 +20,7 @@ export function RealtimeProvider({ children }) {
   const [pendingGoalClips, setPendingGoalClips] = useState(0);
   const [pendingDeposits, setPendingDeposits] = useState(0);
   const [openSupportTickets, setOpenSupportTickets] = useState(0);
+  const [unreadContactMessages, setUnreadContactMessages] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [socket, setSocket] = useState(null);
   const socketRef = useRef(null);
@@ -46,6 +47,7 @@ export function RealtimeProvider({ children }) {
       setPendingGoalClips(0);
       setPendingDeposits(0);
       setOpenSupportTickets(0);
+      setUnreadContactMessages(0);
       setNotifications([]);
       setUnreadMessages(0);
       return;
@@ -71,6 +73,7 @@ export function RealtimeProvider({ children }) {
     s.on('goal_clips:update', ({ count }) => setPendingGoalClips(count));
     s.on('deposits:update', ({ count }) => setPendingDeposits(count));
     s.on('support:update', ({ count }) => setOpenSupportTickets(count));
+    s.on('contact:update', ({ count }) => setUnreadContactMessages(count));
 
     return () => s.disconnect();
   }, [user?.id]);
@@ -89,6 +92,7 @@ export function RealtimeProvider({ children }) {
         pendingGoalClips,
         pendingDeposits,
         openSupportTickets,
+        unreadContactMessages,
         unreadMessages,
         setUnreadMessages,
         socket,
