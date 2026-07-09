@@ -1,0 +1,36 @@
+/* Tailwind is layered in additively for the redesigned sections only —
+   preflight is intentionally skipped so it doesn't reset element defaults
+   relied on by the many pages not yet migrated off theme.css. */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+@plugin 'tailwindcss-animate';
+
+@theme {
+  --font-sans: 'Vazirmatn Variable', 'Vazirmatn', Tahoma, 'Segoe UI', sans-serif;
+
+  --color-bg: #0d0616;
+  --color-bg-soft: #150a24;
+  --color-surface: #1c1030;
+  --color-surface-2: #17101f;
+  --color-border: #2a2140;
+
+  --color-ink: #f4f0fa;
+  --color-ink-muted: #b8a9cc;
+  --color-ink-faint: #8f81a3;
+
+  --color-gold: #f2b705;
+  --color-gold-light: #ffd93d;
+  --color-magenta: #b31670;
+  --color-magenta-light: #d61f8c;
+
+  --color-brand-700: #4c1478;
+  --color-brand-800: #3a0f5c;
+  --color-brand-900: #2a0a45;
+
+  --color-success: #34d399;
+  --color-critical: #ff6b81;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+}

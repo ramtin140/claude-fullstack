@@ -22,7 +22,7 @@ function RulesSection({ h2hFeePercent }) {
   }, []);
 
   return (
-    <div className="card" style={{ padding: 24, marginTop: 40 }}>
+    <div id="rules-fees" className="card" style={{ padding: 24, marginTop: 40, scrollMarginTop: 90 }}>
       <h2 style={{ marginTop: 0, color: 'var(--gold)' }}>قوانین و کارمزدها</h2>
       <p style={{ color: 'var(--text-muted)' }}>
         نرخ تبدیل فعلی: هر تیکت ={' '}
