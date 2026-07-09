@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Inbox } from 'lucide-react';
 import { api } from '../api/client.js';
 import NewsCard from './NewsCard.jsx';
-import '../styles/home.css';
+import { Skeleton } from './ui/skeleton.jsx';
+import { cn } from '../lib/utils.js';
+
+const focusRing = 'outline-none focus-visible:ring-2 focus-visible:ring-gold-light focus-visible:ring-offset-2 focus-visible:ring-offset-bg';
 
 const tabs = [
   { key: 'active_games', label: 'بازی‌های فعال' },
@@ -9,6 +13,20 @@ const tabs = [
   { key: 'popular', label: 'گیک‌ها' },
   { key: 'tutorial', label: 'آموزش‌ها' },
 ];
+
+function NewsCardSkeleton() {
+  return (
+    <div className="flex h-full flex-col overflow-hidden rounded-md border border-border bg-surface">
+      <Skeleton className="h-32 w-full rounded-none" />
+      <div className="flex flex-1 flex-col gap-3 p-5">
+        <Skeleton className="h-4 w-4/5" />
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-2/3" />
+        <Skeleton className="mt-auto h-3 w-20" />
+      </div>
+    </div>
+  );
+}
 
 export default function NewsTabsSection() {
   const [active, setActive] = useState(tabs[0].key);
@@ -24,15 +42,24 @@ export default function NewsTabsSection() {
   }, [active]);
 
   return (
-    <section className="section">
-      <div className="container">
-        <h2 className="section-title">اخبار و مطالب</h2>
-        <div className="tabs">
+    <section className="bg-bg py-16 md:py-20">
+      <div className="mx-auto max-w-[1200px] px-4 md:px-6">
+        <h2 className="mb-8 text-center text-2xl font-extrabold text-ink md:text-3xl">اخبار و مطالب</h2>
+
+        <div role="tablist" aria-label="دسته‌بندی اخبار" className="mb-8 flex flex-wrap justify-center gap-2.5">
           {tabs.map((t) => (
             <button
               key={t.key}
-              className={`tab-btn ${active === t.key ? 'active' : ''}`}
+              role="tab"
+              aria-selected={active === t.key}
               onClick={() => setActive(t.key)}
+              className={cn(
+                'rounded-full px-4 py-2 text-sm font-semibold transition-colors duration-150',
+                focusRing,
+                active === t.key
+                  ? 'bg-gradient-to-br from-gold-light to-gold text-[#241102]'
+                  : 'bg-surface text-ink-muted hover:bg-surface-2 hover:text-ink'
+              )}
             >
               {t.label}
             </button>
@@ -40,11 +67,18 @@ export default function NewsTabsSection() {
         </div>
 
         {loading ? (
-          <div className="empty-state">در حال بارگذاری...</div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <NewsCardSkeleton key={i} />
+            ))}
+          </div>
         ) : news.length === 0 ? (
-          <div className="empty-state">مطلبی در این دسته ثبت نشده است.</div>
+          <div className="flex flex-col items-center gap-3 rounded-md border border-dashed border-border py-16 text-ink-faint">
+            <Inbox size={28} />
+            <span className="text-sm">مطلبی در این دسته ثبت نشده است.</span>
+          </div>
         ) : (
-          <div className="news-grid">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {news.map((n) => (
               <NewsCard key={n.id} item={n} />
             ))}
