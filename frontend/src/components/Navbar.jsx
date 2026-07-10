@@ -6,6 +6,7 @@ import { useRealtime } from '../context/RealtimeContext.jsx';
 import { hasStaffAccess, isStaff } from './ProtectedRoute.jsx';
 import { assetUrl } from '../api/client.js';
 import NotificationBell from './NotificationBell.jsx';
+import PlayerAvatarIcon from './PlayerAvatarIcon.jsx';
 import { Button } from './ui/button.jsx';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar.jsx';
 import {
@@ -83,13 +84,13 @@ export default function Navbar() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className={cn('relative rounded-full', focusRing)} aria-label="منوی کاربر">
+                  <button className={cn('relative rounded-full bg-transparent', focusRing)} aria-label="منوی کاربر">
                     <Avatar className="h-10 w-10 border border-border">
                       {user.avatar_url ? (
                         <AvatarImage src={assetUrl(user.avatar_url)} alt="" />
                       ) : null}
                       <AvatarFallback>
-                        {isStaff(user) ? <ShieldCheck size={17} /> : <User size={17} />}
+                        {isStaff(user) ? <ShieldCheck size={17} /> : <PlayerAvatarIcon seed={user.id} size={17} />}
                       </AvatarFallback>
                     </Avatar>
                     {showExpertBadge && (
@@ -146,7 +147,7 @@ export default function Navbar() {
           )}
 
           <button
-            className={cn('inline-flex rounded-full p-2 text-ink md:hidden', focusRing)}
+            className={cn('inline-flex rounded-full bg-transparent p-2 text-ink md:hidden', focusRing)}
             onClick={() => setOpen((o) => !o)}
             aria-label={open ? 'بستن منو' : 'باز کردن منو'}
             aria-expanded={open}

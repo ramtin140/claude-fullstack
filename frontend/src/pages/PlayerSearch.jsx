@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Swords, User, MessageCircle } from 'lucide-react';
+import { Search, Swords, MessageCircle } from 'lucide-react';
 import { api, assetUrl } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import PlayerAvatarIcon from '../components/PlayerAvatarIcon.jsx';
 import '../styles/pages.css';
 
 export default function PlayerSearch() {
@@ -79,7 +80,7 @@ export default function PlayerSearch() {
                     <img src={assetUrl(u.avatar_url)} alt="" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
                   ) : (
                     <span className="opponent-avatar-placeholder" style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <User size={16} />
+                      <PlayerAvatarIcon seed={u.id} size={16} />
                     </span>
                   )}
                   {u.name} {u.is_vip ? <span className="badge badge-live">VIP</span> : null}

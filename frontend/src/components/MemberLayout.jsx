@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../context/AuthContext.jsx';
 import { useRealtime } from '../context/RealtimeContext.jsx';
 import { assetUrl } from '../api/client.js';
+import PlayerAvatarIcon from './PlayerAvatarIcon.jsx';
 import '../styles/member.css';
 import '../styles/toast.css';
 
@@ -58,7 +59,7 @@ export default function MemberLayout() {
             <img src={assetUrl(user.avatar_url)} alt="" className="member-sidebar-avatar" />
           ) : (
             <div className="member-sidebar-avatar member-sidebar-avatar-placeholder">
-              <User size={22} />
+              <PlayerAvatarIcon seed={user?.id} size={22} />
             </div>
           )}
           <div>

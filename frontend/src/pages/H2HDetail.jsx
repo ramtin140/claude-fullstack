@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Trophy, Gavel, User, Clock, AlertTriangle, Wifi } from 'lucide-react';
+import { Trophy, Gavel, Clock, AlertTriangle, Wifi } from 'lucide-react';
 import { api, assetUrl } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { hasStaffAccess } from '../components/ProtectedRoute.jsx';
 import { parseUtc } from '../utils/datetime.js';
+import PlayerAvatarIcon from '../components/PlayerAvatarIcon.jsx';
 import '../styles/h2h.css';
 import '../styles/pages.css';
 
@@ -35,7 +36,7 @@ function PlayerChip({ name, avatar, fifaSoulId, roleLabel }) {
         <img src={assetUrl(avatar)} alt="" />
       ) : (
         <span className="opponent-avatar-placeholder">
-          <User size={14} />
+          <PlayerAvatarIcon seed={fifaSoulId || name} size={14} />
         </span>
       )}
       <strong>{name || 'نامشخص'}</strong>

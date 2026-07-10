@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { User, Camera, CreditCard } from 'lucide-react';
+import { Camera, CreditCard } from 'lucide-react';
 import { api, assetUrl } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import PlayerAvatarIcon from '../components/PlayerAvatarIcon.jsx';
 import '../styles/pages.css';
 
 export default function Profile() {
@@ -81,7 +82,7 @@ export default function Profile() {
               <img src={assetUrl(avatarUrl)} alt={user.name} className="profile-avatar" />
             ) : (
               <div className="profile-avatar profile-avatar-placeholder">
-                <User size={36} />
+                <PlayerAvatarIcon seed={user.id} size={36} />
               </div>
             )}
             <span className="profile-avatar-edit">

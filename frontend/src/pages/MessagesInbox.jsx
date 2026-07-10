@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { User, MessageCircle } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import { api, assetUrl } from '../api/client.js';
 import { timeAgo } from '../utils/datetime.js';
+import PlayerAvatarIcon from '../components/PlayerAvatarIcon.jsx';
 import '../styles/pages.css';
 import '../styles/messages.css';
 
@@ -35,7 +36,7 @@ export default function MessagesInbox() {
                   <img src={assetUrl(t.avatar_url)} alt="" className="thread-avatar" />
                 ) : (
                   <span className="thread-avatar thread-avatar-placeholder">
-                    <User size={18} />
+                    <PlayerAvatarIcon seed={t.user_id} size={18} />
                   </span>
                 )}
                 <div className="thread-info">

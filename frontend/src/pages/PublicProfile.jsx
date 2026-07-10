@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
-import { User, MessageCircle, Swords } from 'lucide-react';
+import { MessageCircle, Swords } from 'lucide-react';
 import { api, assetUrl } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import PlayerAvatarIcon from '../components/PlayerAvatarIcon.jsx';
 import '../styles/pages.css';
 
 export default function PublicProfile() {
@@ -45,7 +46,7 @@ export default function PublicProfile() {
             <img src={assetUrl(profile.avatar_url)} alt="" className="profile-avatar" style={{ margin: '0 auto' }} />
           ) : (
             <div className="profile-avatar profile-avatar-placeholder" style={{ margin: '0 auto' }}>
-              <User size={36} />
+              <PlayerAvatarIcon seed={profile.id} size={36} />
             </div>
           )}
           <h1 style={{ margin: '14px 0 2px' }}>

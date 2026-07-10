@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { User, Send, ArrowRight } from 'lucide-react';
+import { Send, ArrowRight } from 'lucide-react';
 import { api, assetUrl } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useRealtime } from '../context/RealtimeContext.jsx';
 import { formatTime } from '../utils/datetime.js';
+import PlayerAvatarIcon from '../components/PlayerAvatarIcon.jsx';
 import '../styles/pages.css';
 import '../styles/messages.css';
 
@@ -72,7 +73,7 @@ export default function MessageThread() {
             <img src={assetUrl(other.avatar_url)} alt="" className="thread-avatar" />
           ) : (
             <span className="thread-avatar thread-avatar-placeholder">
-              <User size={18} />
+              <PlayerAvatarIcon seed={other.id} size={18} />
             </span>
           )}
           <Link to={`/u/${other.id}`} className="thread-name">

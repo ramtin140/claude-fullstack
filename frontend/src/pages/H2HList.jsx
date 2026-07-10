@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Coins, Zap, Lock, Plus, User, Trophy } from 'lucide-react';
+import { Coins, Zap, Lock, Plus, Trophy } from 'lucide-react';
 import { api, assetUrl } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import PlayerAvatarIcon from '../components/PlayerAvatarIcon.jsx';
 import '../styles/h2h.css';
 
 const statusLabel = { open: 'باز برای جوین', locked: 'در حال انجام', completed: 'پایان‌یافته', cancelled: 'لغوشده' };
@@ -25,7 +26,7 @@ function PersonChip({ name, avatar, fallback = 'ناشناس' }) {
         <img src={assetUrl(avatar)} alt="" />
       ) : (
         <span className="opponent-avatar-placeholder">
-          <User size={12} />
+          <PlayerAvatarIcon seed={name || fallback} size={12} />
         </span>
       )}
       {name || fallback}

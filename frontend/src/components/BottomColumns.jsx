@@ -4,6 +4,7 @@ import { api } from '../api/client.js';
 import { Card } from './ui/card.jsx';
 import { Badge } from './ui/badge.jsx';
 import { Avatar, AvatarFallback } from './ui/avatar.jsx';
+import PlayerAvatarIcon from './PlayerAvatarIcon.jsx';
 import { cn } from '../lib/utils.js';
 
 function ColumnEmpty({ text }) {
@@ -103,7 +104,9 @@ export default function BottomColumns() {
                     {i + 1}
                   </span>
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-xs font-bold">{u.name?.[0] ?? '؟'}</AvatarFallback>
+                    <AvatarFallback>
+                      <PlayerAvatarIcon seed={u.id} size={14} />
+                    </AvatarFallback>
                   </Avatar>
                   <span className="flex-1 truncate text-sm text-ink">{u.name}</span>
                   <span className="shrink-0 text-[13px] font-semibold text-gold">{u.points.toLocaleString('fa-IR')} امتیاز</span>

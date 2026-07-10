@@ -57,7 +57,7 @@ export default function NotificationBell() {
               <button
                 key={n.id}
                 className={cn(
-                  'flex flex-col gap-1 border-b border-border px-4 py-3 text-right text-[13px] text-ink outline-none transition-colors last:border-b-0 hover:bg-bg-soft focus-visible:bg-bg-soft',
+                  'flex flex-col gap-1 border-b border-border bg-transparent px-4 py-3 text-right text-[13px] text-ink outline-none transition-colors last:border-b-0 hover:bg-bg-soft focus-visible:bg-bg-soft',
                   toneBorder[n.tone]
                 )}
                 onClick={() => {
