@@ -46,7 +46,7 @@ export default function H2HCreate() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-field">
-            <label>نوع شرط‌بندی</label>
+            <label>نوع ورودی</label>
             <select value={form.stake_type} onChange={(e) => setForm({ ...form, stake_type: e.target.value })}>
               <option value="ticket">تیکتی (۱ تا ۵ تیکت)</option>
               <option value="xp">رایگان (بر اساس اکسپرینس)</option>

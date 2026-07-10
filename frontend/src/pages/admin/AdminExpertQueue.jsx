@@ -34,7 +34,7 @@ export default function AdminExpertQueue() {
   }
 
   async function voidMatch(leg) {
-    if (!confirm('آیا مطمئنید؟ کل مسابقه لغو و مبلغ شرط‌بندی به هر دو طرف بازگردانده می‌شود.')) return;
+    if (!confirm('آیا مطمئنید؟ کل مسابقه لغو و مبلغ ورودی به هر دو طرف بازگردانده می‌شود.')) return;
     setError(null);
     try {
       await api.post(`/h2h/${leg.match_id}/legs/${leg.leg_number}/expert-void`, { reason: scores[leg.id]?.notes });

@@ -36,7 +36,7 @@ function StatCard({ icon: Icon, value, label, start }) {
       <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gold/10 text-gold">
         <Icon size={22} />
       </span>
-      <span className="font-mono text-3xl font-extrabold text-ink md:text-4xl">
+      <span className="text-3xl font-extrabold tabular-nums text-ink md:text-4xl">
         {count.toLocaleString('fa-IR')}
       </span>
       <span className="text-sm text-ink-muted">{label}</span>

@@ -7,8 +7,8 @@ import { formatDateTime } from '../utils/datetime.js';
 import '../styles/pages.css';
 
 const reasonLabel = {
-  match_stake: 'شرط‌بندی مسابقه',
-  match_refund: 'بازگشت شرط (تساوی)',
+  match_stake: 'ورودی مسابقه',
+  match_refund: 'بازگشت ورودی (تساوی)',
   match_reward: 'جایزه برد',
   admin_adjustment: 'تنظیم توسط ادمین',
   withdrawal_request: 'درخواست برداشت',

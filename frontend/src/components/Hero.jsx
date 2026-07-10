@@ -29,7 +29,7 @@ function LiveMatchPreview() {
         </div>
 
         <div className="flex flex-col items-center gap-1">
-          <div className="flex items-center gap-2 font-mono text-2xl font-bold text-ink">
+          <div className="flex items-center gap-2 text-2xl font-bold tabular-nums text-ink">
             <span>۲</span>
             <span className="text-ink-faint">-</span>
             <span>۱</span>
@@ -47,7 +47,7 @@ function LiveMatchPreview() {
 
       <div className="mt-5 flex items-center justify-center gap-1.5 border-t border-border pt-4 text-xs text-ink-muted">
         <Swords size={13} className="text-gold" />
-        شرط‌بندی: ۲ تیکت هر نفر
+        ورودی: ۲ تیکت هر نفر
       </div>
     </Card>
   );

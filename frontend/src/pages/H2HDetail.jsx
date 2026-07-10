@@ -550,7 +550,7 @@ export default function H2HDetail() {
         {match.status === 'cancelled' && (
           <div className="winner-banner" style={{ borderColor: 'var(--magenta)', color: 'var(--magenta)' }}>
             <Wifi size={20} style={{ verticalAlign: 'middle', marginLeft: 8 }} />
-            این مسابقه به دلیل نقص فنی لغو شد{match.cancel_reason ? `: ${match.cancel_reason}` : ''} — مبلغ شرط‌بندی بازگردانده شد.
+            این مسابقه به دلیل نقص فنی لغو شد{match.cancel_reason ? `: ${match.cancel_reason}` : ''} — مبلغ ورودی بازگردانده شد.
           </div>
         )}
 

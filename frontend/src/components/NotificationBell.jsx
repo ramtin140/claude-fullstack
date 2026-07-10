@@ -27,11 +27,12 @@ export default function NotificationBell() {
   if (!realtime) return null;
 
   function toggle() {
-    setOpen((o) => {
-      if (!o) realtime.markAllRead();
-      return !o;
-    });
+    setOpen((o) => !o);
   }
+
+  useEffect(() => {
+    if (open) realtime.markAllRead();
+  }, [open]);
 
   return (
     <div className="relative" ref={wrapRef}>
@@ -48,7 +49,7 @@ export default function NotificationBell() {
         )}
       </button>
       {open && (
-        <div className="absolute start-0 top-[calc(100%+10px)] z-[60] flex max-h-[420px] w-80 flex-col overflow-y-auto rounded-md border border-border bg-surface-2 shadow-[0_12px_32px_rgba(0,0,0,0.4)] max-[480px]:w-[90vw]">
+        <div className="absolute end-0 top-[calc(100%+10px)] z-[60] flex max-h-[420px] w-80 max-w-[calc(100vw-1.5rem)] flex-col overflow-y-auto rounded-md border border-border bg-surface-2 shadow-[0_12px_32px_rgba(0,0,0,0.4)]">
           {realtime.notifications.length === 0 ? (
             <div className="p-5 text-center text-sm text-ink-muted">اعلانی وجود ندارد</div>
           ) : (
