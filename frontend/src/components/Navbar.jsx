@@ -41,9 +41,20 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 border-b border-border bg-bg/90 backdrop-blur-md">
       <div className="mx-auto flex h-[70px] max-w-[1200px] items-center justify-between gap-4 px-4 md:px-6">
         <Link to="/" className={cn('flex shrink-0 items-center gap-2.5 rounded-lg font-extrabold text-gold', focusRing)}>
-          <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-gradient-to-br from-magenta-light to-brand-700 font-black text-white">
-            S
-          </span>
+          <span
+            className="h-9 w-9 shrink-0 bg-gradient-to-br from-gold-light to-gold"
+            style={{
+              WebkitMaskImage: 'url(/logo-monogram.png)',
+              maskImage: 'url(/logo-monogram.png)',
+              WebkitMaskSize: 'contain',
+              maskSize: 'contain',
+              WebkitMaskRepeat: 'no-repeat',
+              maskRepeat: 'no-repeat',
+              WebkitMaskPosition: 'center',
+              maskPosition: 'center',
+            }}
+            aria-hidden="true"
+          />
           <span className="hidden text-lg sm:inline">FIFA SOUL</span>
         </Link>
 
