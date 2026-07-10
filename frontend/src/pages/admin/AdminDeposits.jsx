@@ -2,11 +2,18 @@ import { useEffect, useState } from 'react';
 import { Paperclip } from 'lucide-react';
 import { api, assetUrl } from '../../api/client.js';
 import { formatDateTime } from '../../utils/datetime.js';
-import '../../styles/admin.css';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table.jsx';
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from '../../components/ui/dialog.jsx';
 
 const statusLabel = { pending: 'در انتظار بررسی', approved: 'تایید شد', rejected: 'رد شد' };
-const statusBadge = { pending: 'badge-waiting', approved: 'badge-live', rejected: 'badge-finished' };
+const statusVariant = { pending: 'waiting', approved: 'live', rejected: 'finished' };
 const typeLabel = { card_to_card: 'کارت به کارت', bank_account: 'واریز به حساب' };
+
+const fieldClass =
+  'w-full rounded-md border border-border bg-bg px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus-visible:border-gold';
 
 function ReviewModal({ request, mode, onClose, onDone }) {
   const [notes, setNotes] = useState('');
@@ -35,32 +42,34 @@ function ReviewModal({ request, mode, onClose, onDone }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="card modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2>{isReject ? 'رد درخواست شارژ' : 'تایید شارژ کیف پول'}</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: -8 }}>
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent>
+        <DialogTitle>{isReject ? 'رد درخواست شارژ' : 'تایید شارژ کیف پول'}</DialogTitle>
+        <p className="-mt-2 mb-3.5 text-[13px] text-ink-muted">
           {request.user_name} — {request.cash_amount.toLocaleString('fa-IR')} تومان ({typeLabel[request.method_type]}) → {request.ticket_amount} تیکت
         </p>
-        <a href={assetUrl(request.receipt_url)} target="_blank" rel="noreferrer" className="badge badge-waiting" style={{ display: 'inline-flex', gap: 4, marginBottom: 12 }}>
-          <Paperclip size={12} /> مشاهده رسید واریز کاربر
+        <a href={assetUrl(request.receipt_url)} target="_blank" rel="noreferrer" className="mb-3.5 inline-flex">
+          <Badge variant="waiting" className="gap-1">
+            <Paperclip size={12} /> مشاهده رسید واریز کاربر
+          </Badge>
         </a>
         <form onSubmit={submit}>
-          <div className="form-field">
-            <label>{isReject ? 'دلیل رد (الزامی)' : 'توضیح مدیر (اختیاری)'}</label>
-            <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <div className="mb-3.5 flex flex-col gap-1.5">
+            <label className="text-[13px] text-ink-muted">{isReject ? 'دلیل رد (الزامی)' : 'توضیح مدیر (اختیاری)'}</label>
+            <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} className={fieldClass} />
           </div>
-          {error && <p className="error-text">{error}</p>}
-          <div className="modal-actions">
-            <button type="button" className="btn btn-outline" onClick={onClose}>
+          {error && <p className="mb-3.5 text-sm text-critical">{error}</p>}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
               انصراف
-            </button>
-            <button type="submit" className={isReject ? 'btn btn-magenta' : 'btn btn-primary'} disabled={submitting}>
+            </Button>
+            <Button type="submit" variant={isReject ? 'magenta' : 'primary'} disabled={submitting}>
               {submitting ? 'در حال ثبت...' : isReject ? 'رد درخواست' : `تایید و شارژ ${request.ticket_amount} تیکت`}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -76,64 +85,68 @@ export default function AdminDeposits() {
 
   return (
     <div>
-      <div className="admin-header">
-        <h1>درخواست‌های شارژ کیف پول</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-gold">درخواست‌های شارژ کیف پول</h1>
       </div>
 
       {requests.length === 0 ? (
-        <div className="empty-state">درخواستی ثبت نشده است.</div>
+        <div className="rounded-md border border-dashed border-border py-16 text-center text-sm text-ink-faint">درخواستی ثبت نشده است.</div>
       ) : (
-        <div className="card" style={{ overflowX: 'auto' }}>
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>کاربر</th>
-                <th>روش</th>
-                <th>مبلغ (تومان)</th>
-                <th>کارمزد</th>
-                <th>تیکت</th>
-                <th>رسید</th>
-                <th>تاریخ</th>
-                <th>وضعیت</th>
-                <th>یادداشت مدیر</th>
-                <th>عملیات</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Card className="overflow-hidden p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>کاربر</TableHead>
+                <TableHead>روش</TableHead>
+                <TableHead>مبلغ (تومان)</TableHead>
+                <TableHead>کارمزد</TableHead>
+                <TableHead>تیکت</TableHead>
+                <TableHead>رسید</TableHead>
+                <TableHead>تاریخ</TableHead>
+                <TableHead>وضعیت</TableHead>
+                <TableHead>یادداشت مدیر</TableHead>
+                <TableHead>عملیات</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {requests.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.user_name}</td>
-                  <td>{typeLabel[r.method_type]} ({r.method_title})</td>
-                  <td>{r.cash_amount.toLocaleString('fa-IR')}</td>
-                  <td>{r.fee_amount.toLocaleString('fa-IR')}</td>
-                  <td>{r.ticket_amount}</td>
-                  <td>
-                    <a href={assetUrl(r.receipt_url)} target="_blank" rel="noreferrer" className="badge badge-waiting" style={{ gap: 4 }}>
-                      <Paperclip size={12} /> مشاهده
+                <TableRow key={r.id}>
+                  <TableCell>{r.user_name}</TableCell>
+                  <TableCell>
+                    {typeLabel[r.method_type]} ({r.method_title})
+                  </TableCell>
+                  <TableCell>{r.cash_amount.toLocaleString('fa-IR')}</TableCell>
+                  <TableCell>{r.fee_amount.toLocaleString('fa-IR')}</TableCell>
+                  <TableCell>{r.ticket_amount}</TableCell>
+                  <TableCell>
+                    <a href={assetUrl(r.receipt_url)} target="_blank" rel="noreferrer" className="inline-flex">
+                      <Badge variant="waiting" className="gap-1">
+                        <Paperclip size={12} /> مشاهده
+                      </Badge>
                     </a>
-                  </td>
-                  <td>{formatDateTime(r.created_at)}</td>
-                  <td>
-                    <span className={`badge ${statusBadge[r.status]}`}>{statusLabel[r.status]}</span>
-                  </td>
-                  <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: 180 }}>{r.admin_notes}</td>
-                  <td>
+                  </TableCell>
+                  <TableCell>{formatDateTime(r.created_at)}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant[r.status]}>{statusLabel[r.status]}</Badge>
+                  </TableCell>
+                  <TableCell className="max-w-[180px] text-[13px] text-ink-muted">{r.admin_notes}</TableCell>
+                  <TableCell>
                     {r.status === 'pending' && (
-                      <div className="row-actions">
-                        <button className="btn btn-primary" style={{ padding: '6px 12px' }} onClick={() => setReview({ request: r, mode: 'approve' })}>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => setReview({ request: r, mode: 'approve' })}>
                           تایید
-                        </button>
-                        <button className="btn btn-outline" style={{ padding: '6px 12px' }} onClick={() => setReview({ request: r, mode: 'reject' })}>
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setReview({ request: r, mode: 'reject' })}>
                           رد
-                        </button>
+                        </Button>
                       </div>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       {review && (

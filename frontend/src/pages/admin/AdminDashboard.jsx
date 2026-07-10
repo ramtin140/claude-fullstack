@@ -2,7 +2,16 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { hasStaffAccess } from '../../components/ProtectedRoute.jsx';
-import '../../styles/admin.css';
+import { Card } from '../../components/ui/card.jsx';
+
+function Kpi({ value, label }) {
+  return (
+    <Card className="p-5 text-center">
+      <div className="text-[1.7rem] font-extrabold text-gold">{value}</div>
+      <div className="mt-1 text-sm text-ink-muted">{label}</div>
+    </Card>
+  );
+}
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -32,52 +41,26 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <div className="admin-header">
-        <h1>داشبورد مدیریت</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-gold">داشبورد مدیریت</h1>
       </div>
-      <div className="admin-kpis">
+      <div className="mb-7 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-[18px]">
         {hasStaffAccess(user, []) && (
           <>
-            <div className="card admin-kpi">
-              <div className="value">{counts.tournaments}</div>
-              <div className="label">تورنمنت‌ها</div>
-            </div>
-            <div className="card admin-kpi">
-              <div className="value">{counts.matches}</div>
-              <div className="label">مسابقات</div>
-            </div>
-            <div className="card admin-kpi">
-              <div className="value">{counts.users}</div>
-              <div className="label">کاربران</div>
-            </div>
+            <Kpi value={counts.tournaments} label="تورنمنت‌ها" />
+            <Kpi value={counts.matches} label="مسابقات" />
+            <Kpi value={counts.users} label="کاربران" />
           </>
         )}
-        {hasStaffAccess(user, ['writer']) && (
-          <div className="card admin-kpi">
-            <div className="value">{counts.news}</div>
-            <div className="label">اخبار</div>
-          </div>
-        )}
+        {hasStaffAccess(user, ['writer']) && <Kpi value={counts.news} label="اخبار" />}
       </div>
 
       {stats && (
-        <div className="admin-kpis">
-          <div className="card admin-kpi">
-            <div className="value">{stats.ro_dero}</div>
-            <div className="label">رو در رو</div>
-          </div>
-          <div className="card admin-kpi">
-            <div className="value">{stats.play_off}</div>
-            <div className="label">پلی آف</div>
-          </div>
-          <div className="card admin-kpi">
-            <div className="value">{stats.leagues}</div>
-            <div className="label">لیگ</div>
-          </div>
-          <div className="card admin-kpi">
-            <div className="value">{stats.cups}</div>
-            <div className="label">کاپ</div>
-          </div>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-[18px]">
+          <Kpi value={stats.ro_dero} label="رو در رو" />
+          <Kpi value={stats.play_off} label="پلی آف" />
+          <Kpi value={stats.leagues} label="لیگ" />
+          <Kpi value={stats.cups} label="کاپ" />
         </div>
       )}
     </div>

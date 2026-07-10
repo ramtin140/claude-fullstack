@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Coins, Zap, Banknote, Paperclip, Wallet as WalletIcon } from 'lucide-react';
+import { Coins, Zap, Banknote, Paperclip, Wallet as WalletIcon, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { api, assetUrl } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { formatDateTime } from '../utils/datetime.js';
-import '../styles/pages.css';
+import { Card } from '../components/ui/card.jsx';
+import { Badge } from '../components/ui/badge.jsx';
+import { Button } from '../components/ui/button.jsx';
+import { Input } from '../components/ui/input.jsx';
 
 const reasonLabel = {
   match_stake: 'ورودی مسابقه',
@@ -17,11 +20,23 @@ const reasonLabel = {
 };
 
 const withdrawalStatusLabel = { pending: 'در انتظار بررسی', paid: 'پرداخت شد', rejected: 'رد شد' };
-const withdrawalStatusBadge = { pending: 'badge-waiting', paid: 'badge-live', rejected: 'badge-finished' };
+const withdrawalStatusBadge = { pending: 'waiting', paid: 'live', rejected: 'finished' };
 
 const depositStatusLabel = { pending: 'در انتظار بررسی', approved: 'تایید شد', rejected: 'رد شد' };
-const depositStatusBadge = { pending: 'badge-waiting', approved: 'badge-live', rejected: 'badge-finished' };
+const depositStatusBadge = { pending: 'waiting', approved: 'live', rejected: 'finished' };
 const methodTypeLabel = { card_to_card: 'کارت به کارت', bank_account: 'واریز به حساب' };
+
+const fieldClass =
+  'w-full rounded-md border border-border bg-surface px-3.5 py-3 text-sm text-ink outline-none transition-colors focus-visible:border-gold focus-visible:ring-2 focus-visible:ring-gold-light focus-visible:ring-offset-2 focus-visible:ring-offset-bg';
+
+function FormField({ label, children }) {
+  return (
+    <div className="mb-4 flex flex-col gap-1.5">
+      <label className="text-[13px] text-ink-muted">{label}</label>
+      {children}
+    </div>
+  );
+}
 
 function DepositSection({ refreshWallet }) {
   const [methods, setMethods] = useState([]);
@@ -83,91 +98,105 @@ function DepositSection({ refreshWallet }) {
   if (methods.length === 0) return null;
 
   return (
-    <div className="card" style={{ padding: 20, marginBottom: 32 }}>
-      <h3 style={{ marginTop: 0, color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: 8 }}>
+    <Card className="mb-8 p-5">
+      <h3 className="mb-1.5 flex items-center gap-2 text-base font-bold text-gold">
         <WalletIcon size={18} /> شارژ کیف پول
       </h3>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>نرخ فعلی: هر تیکت = {rate.toLocaleString('fa-IR')} تومان</p>
+      <p className="mb-4 text-[13px] text-ink-muted">نرخ فعلی: هر تیکت = {rate.toLocaleString('fa-IR')} تومان</p>
 
       <form onSubmit={submit}>
-        <div className="form-field">
-          <label>روش پرداخت</label>
-          <select value={methodId} onChange={(e) => setMethodId(e.target.value)}>
+        <FormField label="روش پرداخت">
+          <select value={methodId} onChange={(e) => setMethodId(e.target.value)} className={fieldClass}>
             {methods.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.title} ({methodTypeLabel[m.type]})
               </option>
             ))}
           </select>
-        </div>
+        </FormField>
 
         {selectedMethod && (
-          <div style={{ background: 'var(--bg-darker)', border: '1px solid var(--border-soft)', borderRadius: 10, padding: 14, marginBottom: 16, fontSize: '0.85rem' }}>
+          <div className="mb-4 rounded-[10px] border border-border bg-bg-soft p-3.5 text-[13px] text-ink">
             {selectedMethod.type === 'card_to_card' ? (
               <>
-                <div>شماره کارت: <span style={{ fontFamily: 'monospace', direction: 'ltr', display: 'inline-block' }}>{selectedMethod.card_number}</span></div>
+                <div>
+                  شماره کارت: <span className="inline-block font-mono" dir="ltr">{selectedMethod.card_number}</span>
+                </div>
                 {selectedMethod.card_holder_name && <div>به نام: {selectedMethod.card_holder_name}</div>}
               </>
             ) : (
               <>
-                <div>شماره شبا: <span style={{ fontFamily: 'monospace', direction: 'ltr', display: 'inline-block' }}>{selectedMethod.iban}</span></div>
+                <div>
+                  شماره شبا: <span className="inline-block font-mono" dir="ltr">{selectedMethod.iban}</span>
+                </div>
                 {selectedMethod.account_holder_name && <div>به نام: {selectedMethod.account_holder_name}</div>}
                 {selectedMethod.bank_name && <div>بانک: {selectedMethod.bank_name}</div>}
               </>
             )}
-            {selectedMethod.instructions && <div style={{ marginTop: 6, color: 'var(--text-muted)' }}>{selectedMethod.instructions}</div>}
-            <div style={{ marginTop: 6, color: 'var(--text-muted)' }}>
+            {selectedMethod.instructions && <div className="mt-1.5 text-ink-muted">{selectedMethod.instructions}</div>}
+            <div className="mt-1.5 text-ink-muted">
               حداقل {selectedMethod.min_amount.toLocaleString('fa-IR')} تومان
               {selectedMethod.max_amount ? ` — حداکثر ${selectedMethod.max_amount.toLocaleString('fa-IR')} تومان` : ''}
             </div>
           </div>
         )}
 
-        <div className="form-field">
-          <label>مبلغ واریزی (تومان)</label>
-          <input type="number" min={1} required value={amount} onChange={(e) => setAmount(e.target.value)} />
-        </div>
+        <FormField label="مبلغ واریزی (تومان)">
+          <Input type="number" min={1} required value={amount} onChange={(e) => setAmount(e.target.value)} className="rounded-md" />
+        </FormField>
         {cashAmount > 0 && (
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: -10 }}>
+          <p className="-mt-2.5 mb-4 text-[13px] text-ink-muted">
             کارمزد: {feeAmount.toLocaleString('fa-IR')} تومان — تیکت قابل شارژ: تقریباً {ticketPreview}
           </p>
         )}
 
-        <div className="form-field">
-          <label>تصویر رسید واریز (الزامی)</label>
-          <input type="file" accept="image/png,image/jpeg,image/webp,application/pdf" required onChange={(e) => setFile(e.target.files[0] || null)} />
-        </div>
+        <FormField label="تصویر رسید واریز (الزامی)">
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,application/pdf"
+            required
+            onChange={(e) => setFile(e.target.files[0] || null)}
+            className="text-sm text-ink-muted file:me-3 file:rounded-full file:border-0 file:bg-surface-2 file:px-3.5 file:py-2 file:text-[13px] file:text-ink"
+          />
+        </FormField>
 
-        <div className="form-field">
-          <label>توضیح یا کد پیگیری (اختیاری)</label>
-          <input value={note} onChange={(e) => setNote(e.target.value)} />
-        </div>
+        <FormField label="توضیح یا کد پیگیری (اختیاری)">
+          <Input value={note} onChange={(e) => setNote(e.target.value)} className="rounded-md" />
+        </FormField>
 
-        <button className="btn btn-primary" type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting}>
           {submitting ? 'در حال ثبت...' : 'ثبت درخواست شارژ'}
-        </button>
+        </Button>
       </form>
 
-      {message && <p className="success-text">{message}</p>}
-      {error && <p className="error-text">{error}</p>}
+      {message && (
+        <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-success">
+          <CheckCircle2 size={15} /> {message}
+        </p>
+      )}
+      {error && (
+        <p className="mt-3 flex items-center gap-1.5 text-sm text-critical">
+          <AlertCircle size={14} /> {error}
+        </p>
+      )}
 
       {requests.length > 0 && (
-        <div style={{ marginTop: 18 }}>
+        <div className="mt-4">
           {requests.map((r) => (
-            <div key={r.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border-soft)', fontSize: '0.85rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                <span>
+            <div key={r.id} className="border-b border-border py-2.5 text-[13px] last:border-b-0">
+              <div className="flex flex-wrap items-center justify-between gap-2.5">
+                <span className="text-ink-muted">
                   {r.cash_amount.toLocaleString('fa-IR')} تومان ({methodTypeLabel[r.method_type]}) — {formatDateTime(r.created_at)}
                 </span>
-                <span className={`badge ${depositStatusBadge[r.status]}`}>{depositStatusLabel[r.status]}</span>
+                <Badge variant={depositStatusBadge[r.status]}>{depositStatusLabel[r.status]}</Badge>
               </div>
-              {r.status === 'approved' && <div style={{ color: '#4ade80', marginTop: 6 }}>{r.ticket_amount} تیکت اضافه شد</div>}
-              {r.admin_notes && <div style={{ color: 'var(--text-muted)', marginTop: 6 }}>یادداشت مدیر: {r.admin_notes}</div>}
+              {r.status === 'approved' && <div className="mt-1.5 text-success">{r.ticket_amount} تیکت اضافه شد</div>}
+              {r.admin_notes && <div className="mt-1.5 text-ink-muted">یادداشت مدیر: {r.admin_notes}</div>}
             </div>
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -200,57 +229,67 @@ function WithdrawalSection({ ticketBalance, iban, refreshWallet }) {
   }
 
   return (
-    <div className="card" style={{ padding: 20, marginBottom: 32 }}>
-      <h3 style={{ marginTop: 0, color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: 8 }}>
+    <Card className="mb-8 p-5">
+      <h3 className="mb-1.5 flex items-center gap-2 text-base font-bold text-gold">
         <Banknote size={18} /> برداشت تیکت به نقد
       </h3>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-        نرخ فعلی: هر تیکت = {rate.toLocaleString('fa-IR')} تومان
-      </p>
+      <p className="mb-4 text-[13px] text-ink-muted">نرخ فعلی: هر تیکت = {rate.toLocaleString('fa-IR')} تومان</p>
 
       {!iban ? (
-        <p className="error-text">
-          برای ثبت درخواست برداشت، ابتدا شماره شبا خود را در <Link to="/profile">پروفایل</Link> ثبت کنید.
+        <p className="flex items-center gap-1.5 text-sm text-critical">
+          <AlertCircle size={14} />
+          برای ثبت درخواست برداشت، ابتدا شماره شبا خود را در{' '}
+          <Link to="/profile" className="underline">
+            پروفایل
+          </Link>{' '}
+          ثبت کنید.
         </p>
       ) : (
-        <form onSubmit={submit} style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div className="form-field" style={{ marginBottom: 0 }}>
-            <label>تعداد تیکت</label>
-            <input type="number" min={1} max={ticketBalance} required value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <form onSubmit={submit} className="flex flex-wrap items-end gap-2.5">
+          <div className="mb-0 flex flex-col gap-1.5">
+            <label className="text-[13px] text-ink-muted">تعداد تیکت</label>
+            <Input
+              type="number"
+              min={1}
+              max={ticketBalance}
+              required
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-32 rounded-md"
+            />
           </div>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            ≈ {(Number(amount || 0) * rate).toLocaleString('fa-IR')} تومان
-          </span>
-          <button className="btn btn-primary" type="submit">
-            ثبت درخواست برداشت
-          </button>
+          <span className="pb-3 text-[13px] text-ink-muted">≈ {(Number(amount || 0) * rate).toLocaleString('fa-IR')} تومان</span>
+          <Button type="submit">ثبت درخواست برداشت</Button>
         </form>
       )}
-      {message && <p className="success-text">{message}</p>}
-      {error && <p className="error-text">{error}</p>}
+      {message && (
+        <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-success">
+          <CheckCircle2 size={15} /> {message}
+        </p>
+      )}
+      {error && (
+        <p className="mt-3 flex items-center gap-1.5 text-sm text-critical">
+          <AlertCircle size={14} /> {error}
+        </p>
+      )}
 
       {requests.length > 0 && (
-        <div style={{ marginTop: 18 }}>
+        <div className="mt-4">
           {requests.map((r) => (
-            <div key={r.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border-soft)', fontSize: '0.85rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                <span>
+            <div key={r.id} className="border-b border-border py-2.5 text-[13px] last:border-b-0">
+              <div className="flex flex-wrap items-center justify-between gap-2.5">
+                <span className="text-ink-muted">
                   {r.ticket_amount} تیکت ({r.cash_amount.toLocaleString('fa-IR')} تومان) — {formatDateTime(r.created_at)}
                 </span>
-                <span className={`badge ${withdrawalStatusBadge[r.status]}`}>{withdrawalStatusLabel[r.status]}</span>
+                <Badge variant={withdrawalStatusBadge[r.status]}>{withdrawalStatusLabel[r.status]}</Badge>
               </div>
-              {r.admin_notes && (
-                <div style={{ color: 'var(--text-muted)', marginTop: 6 }}>
-                  یادداشت مدیر: {r.admin_notes}
-                </div>
-              )}
+              {r.admin_notes && <div className="mt-1.5 text-ink-muted">یادداشت مدیر: {r.admin_notes}</div>}
               {r.receipt_url && (
                 <a
                   href={assetUrl(r.receipt_url)}
                   target="_blank"
                   rel="noreferrer"
-                  className="badge badge-waiting"
-                  style={{ marginTop: 6, display: 'inline-flex', gap: 4 }}
+                  className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-gold/15 px-3 py-1 text-xs font-semibold text-gold"
                 >
                   <Paperclip size={12} /> مشاهده فیش پرداخت
                 </a>
@@ -259,7 +298,7 @@ function WithdrawalSection({ ticketBalance, iban, refreshWallet }) {
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -278,67 +317,68 @@ export default function Wallet() {
     refreshUser();
   }
 
-  if (!data) return <div className="empty-state" style={{ padding: 60 }}>در حال بارگذاری...</div>;
+  if (!data) return <div className="flex justify-center py-16 text-ink-faint">در حال بارگذاری...</div>;
 
   const { wallet, transactions } = data;
 
   return (
-    <div className="page-wrap">
-      <div className="page-header">
-        <h1>کیف پول من</h1>
-        <p>موجودی تیکت، اکسپرینس و تاریخچه تراکنش‌ها</p>
+    <div>
+      <div className="px-4 pb-5 pt-10 text-center md:px-6">
+        <h1 className="mb-2 text-2xl font-bold text-gold">کیف پول من</h1>
+        <p className="text-ink-muted">موجودی تیکت، اکسپرینس و تاریخچه تراکنش‌ها</p>
       </div>
-      <div className="container" style={{ paddingBottom: 60 }}>
-        <div className="dashboard-grid">
-          <div className="card dashboard-stat">
-            <Coins color="var(--gold)" />
-            <div className="value">{wallet.ticket_balance}</div>
-            <div className="label">موجودی تیکت</div>
-          </div>
-          <div className="card dashboard-stat">
-            <Zap color="var(--gold)" />
-            <div className="value">{wallet.xp}</div>
-            <div className="label">اکسپرینس (XP)</div>
-          </div>
-          <div className="card dashboard-stat">
-            <div className="value" style={{ color: 'var(--gold)' }}>{wallet.grade}</div>
-            <div className="label">گرید فصلی ({wallet.season_points} امتیاز)</div>
-          </div>
+
+      <div className="mx-auto max-w-[1200px] px-4 pb-16 pt-4 md:px-6">
+        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Card className="flex flex-col items-center gap-2 px-4 py-6 text-center">
+            <Coins size={20} className="mb-1 text-gold" />
+            <div className="text-2xl font-extrabold tabular-nums text-gold">{wallet.ticket_balance}</div>
+            <div className="text-[13px] text-ink-muted">موجودی تیکت</div>
+          </Card>
+          <Card className="flex flex-col items-center gap-2 px-4 py-6 text-center">
+            <Zap size={20} className="mb-1 text-gold" />
+            <div className="text-2xl font-extrabold tabular-nums text-gold">{wallet.xp}</div>
+            <div className="text-[13px] text-ink-muted">اکسپرینس (XP)</div>
+          </Card>
+          <Card className="flex flex-col items-center gap-2 px-4 py-6 text-center">
+            <div className="text-2xl font-extrabold text-gold">{wallet.grade}</div>
+            <div className="text-[13px] text-ink-muted">گرید فصلی ({wallet.season_points} امتیاز)</div>
+          </Card>
         </div>
 
         <DepositSection refreshWallet={refreshWallet} />
         <WithdrawalSection ticketBalance={wallet.ticket_balance} iban={user.iban} refreshWallet={refreshWallet} />
 
-        <h3 style={{ color: 'var(--gold)' }}>تراکنش‌های اخیر</h3>
+        <h3 className="mb-4 text-lg font-bold text-gold">تراکنش‌های اخیر</h3>
         {transactions.length === 0 ? (
-          <div className="empty-state">هنوز تراکنشی ثبت نشده است.</div>
+          <div className="py-10 text-center text-sm text-ink-faint">هنوز تراکنشی ثبت نشده است.</div>
         ) : (
-          <div className="card" style={{ overflowX: 'auto' }}>
-            <table className="admin-table">
+          <Card className="overflow-x-auto p-0">
+            <table className="w-full min-w-[560px] border-collapse text-sm">
               <thead>
-                <tr>
-                  <th>ارز</th>
-                  <th>مقدار</th>
-                  <th>دلیل</th>
-                  <th>موجودی پس از تراکنش</th>
-                  <th>تاریخ</th>
+                <tr className="border-b border-border bg-surface-2 text-ink-muted">
+                  <th className="px-4 py-3 text-start font-semibold">ارز</th>
+                  <th className="px-4 py-3 text-start font-semibold">مقدار</th>
+                  <th className="px-4 py-3 text-start font-semibold">دلیل</th>
+                  <th className="px-4 py-3 text-start font-semibold">موجودی پس از تراکنش</th>
+                  <th className="px-4 py-3 text-start font-semibold">تاریخ</th>
                 </tr>
               </thead>
               <tbody>
                 {transactions.map((t) => (
-                  <tr key={t.id}>
-                    <td>{t.currency === 'ticket' ? 'تیکت' : 'XP'}</td>
-                    <td style={{ color: t.amount >= 0 ? '#4ade80' : '#ff6b81' }}>
+                  <tr key={t.id} className="border-b border-border text-ink last:border-b-0">
+                    <td className="px-4 py-3">{t.currency === 'ticket' ? 'تیکت' : 'XP'}</td>
+                    <td className={t.amount >= 0 ? 'px-4 py-3 text-success' : 'px-4 py-3 text-critical'}>
                       {t.amount >= 0 ? `+${t.amount}` : t.amount}
                     </td>
-                    <td>{reasonLabel[t.reason] || t.reason}</td>
-                    <td>{t.balance_after}</td>
-                    <td>{t.created_at}</td>
+                    <td className="px-4 py-3 text-ink-muted">{reasonLabel[t.reason] || t.reason}</td>
+                    <td className="px-4 py-3 text-ink-muted">{t.balance_after}</td>
+                    <td className="px-4 py-3 text-ink-muted">{t.created_at}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </Card>
         )}
       </div>
     </div>

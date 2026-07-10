@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { Mail } from 'lucide-react';
 import { api } from '../../api/client.js';
 import { formatDateTime } from '../../utils/datetime.js';
-import '../../styles/admin.css';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { cn } from '../../lib/utils.js';
 
 export default function AdminContactMessages() {
   const [messages, setMessages] = useState([]);
@@ -20,31 +22,31 @@ export default function AdminContactMessages() {
 
   return (
     <div>
-      <div className="admin-header">
-        <h1>پیام‌های تماس با ما</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-gold">پیام‌های تماس با ما</h1>
       </div>
 
       {messages.length === 0 ? (
-        <div className="empty-state">پیامی ثبت نشده است.</div>
+        <div className="rounded-md border border-dashed border-border py-16 text-center text-sm text-ink-faint">پیامی ثبت نشده است.</div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="flex flex-col gap-3">
           {messages.map((m) => (
-            <div key={m.id} className="card" style={{ padding: 18, borderColor: m.is_read ? 'var(--border-soft)' : 'var(--gold)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
-                  <Mail size={16} color="var(--gold)" />
+            <Card key={m.id} className={cn('p-[18px]', !m.is_read && 'border-gold')}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 font-bold">
+                  <Mail size={16} className="text-gold" />
                   {m.name}
-                  <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: '0.85rem' }}>({m.email})</span>
+                  <span className="text-[13px] font-normal text-ink-muted">({m.email})</span>
                 </div>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{formatDateTime(m.created_at)}</span>
+                <span className="text-xs text-ink-faint">{formatDateTime(m.created_at)}</span>
               </div>
-              <p style={{ marginBottom: 10 }}>{m.message}</p>
+              <p className="mb-2.5 mt-2 text-sm text-ink">{m.message}</p>
               {!m.is_read && (
-                <button className="btn btn-outline" style={{ padding: '6px 14px' }} onClick={() => markRead(m.id)}>
+                <Button variant="outline" size="sm" onClick={() => markRead(m.id)}>
                   علامت‌گذاری به‌عنوان خوانده‌شده
-                </button>
+                </Button>
               )}
-            </div>
+            </Card>
           ))}
         </div>
       )}

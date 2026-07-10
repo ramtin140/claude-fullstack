@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { api } from '../../api/client.js';
-import '../../styles/admin.css';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table.jsx';
+
+const fieldClass =
+  'rounded-md border border-border bg-bg px-2.5 py-1.5 text-[13px] text-ink outline-none transition-colors focus-visible:border-gold';
 
 export default function AdminEconomy() {
   const [thresholds, setThresholds] = useState([]);
@@ -111,96 +117,84 @@ export default function AdminEconomy() {
 
   return (
     <div>
-      <div className="admin-header">
-        <h1>مدیریت اقتصاد و گریدبندی</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-gold">مدیریت اقتصاد و گریدبندی</h1>
       </div>
 
-      {message && <p className="success-text">{message}</p>}
-      {error && <p className="error-text">{error}</p>}
+      {message && <p className="mb-4 text-sm text-success">{message}</p>}
+      {error && <p className="mb-4 text-sm text-critical">{error}</p>}
 
-      <div className="card" style={{ padding: 20, marginBottom: 24 }}>
-        <h3 style={{ marginTop: 0, color: 'var(--gold)' }}>آستانه اکسپرینس برای عضویت VIP</h3>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <input
-            type="number"
-            min={0}
-            value={vipThreshold}
-            onChange={(e) => setVipThreshold(e.target.value)}
-            style={{ width: 140, padding: 10, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
-          />
-          <button className="btn btn-primary" onClick={saveVipThreshold}>
-            ذخیره
-          </button>
+      <Card className="mb-6 p-5">
+        <h3 className="mb-3 mt-0 text-[15px] font-bold text-gold">آستانه اکسپرینس برای عضویت VIP</h3>
+        <div className="flex gap-2.5">
+          <Input type="number" min={0} value={vipThreshold} onChange={(e) => setVipThreshold(e.target.value)} className="w-[140px] rounded-md" />
+          <Button onClick={saveVipThreshold}>ذخیره</Button>
         </div>
-      </div>
+      </Card>
 
-      <div className="card" style={{ padding: 20, marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+      <Card className="mb-6 flex flex-wrap items-center justify-between gap-2.5 p-5">
         <div>
-          <h3 style={{ marginTop: 0, marginBottom: 4, color: 'var(--gold)' }}>پیام‌رسانی بین کاربران</h3>
-          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            در صورت غیرفعال بودن، کاربران نمی‌توانند از طریق جستجوی کاربران به هم پیام بدهند.
-          </p>
+          <h3 className="mb-1 mt-0 text-[15px] font-bold text-gold">پیام‌رسانی بین کاربران</h3>
+          <p className="m-0 text-[13px] text-ink-muted">در صورت غیرفعال بودن، کاربران نمی‌توانند از طریق جستجوی کاربران به هم پیام بدهند.</p>
         </div>
-        <button className={`btn ${messagingEnabled ? 'btn-magenta' : 'btn-primary'}`} onClick={toggleMessaging}>
+        <Button variant={messagingEnabled ? 'magenta' : 'primary'} onClick={toggleMessaging}>
           {messagingEnabled ? 'غیرفعال کردن' : 'فعال کردن'}
-        </button>
-      </div>
+        </Button>
+      </Card>
 
-      <div className="card" style={{ overflowX: 'auto', marginBottom: 24 }}>
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>گرید</th>
-              <th>حداقل امتیاز</th>
-              <th>حداکثر امتیاز</th>
-              <th>عملیات</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Card className="mb-6 overflow-hidden p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>گرید</TableHead>
+              <TableHead>حداقل امتیاز</TableHead>
+              <TableHead>حداکثر امتیاز</TableHead>
+              <TableHead>عملیات</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {thresholds.map((row) => (
-              <tr key={row.grade}>
-                <td>{row.grade}</td>
-                <td>
-                  <input
-                    type="number"
-                    defaultValue={row.min_points}
-                    onChange={(e) => (row.min_points = e.target.value)}
-                    style={{ width: 90, padding: 6, borderRadius: 6, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
-                  />
-                </td>
-                <td>
+              <TableRow key={row.grade}>
+                <TableCell>{row.grade}</TableCell>
+                <TableCell>
+                  <input type="number" defaultValue={row.min_points} onChange={(e) => (row.min_points = e.target.value)} className={`w-[90px] ${fieldClass}`} />
+                </TableCell>
+                <TableCell>
                   <input
                     type="number"
                     defaultValue={row.max_points ?? ''}
                     placeholder="نامحدود"
                     onChange={(e) => (row.max_points = e.target.value)}
-                    style={{ width: 90, padding: 6, borderRadius: 6, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
+                    className={`w-[90px] ${fieldClass}`}
                   />
-                </td>
-                <td>
-                  <button className="btn btn-outline" style={{ padding: '6px 14px' }} onClick={() => saveThreshold(row)}>
+                </TableCell>
+                <TableCell>
+                  <Button variant="outline" size="sm" onClick={() => saveThreshold(row)}>
                     ذخیره
-                  </button>
-                </td>
-              </tr>
+                  </Button>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
 
-      <div className="card" style={{ padding: 20, marginBottom: 24 }}>
-        <h3 style={{ marginTop: 0, color: 'var(--gold)' }}>شارژ دستی کیف پول</h3>
+      <Card className="mb-6 p-5">
+        <h3 className="mb-3 mt-0 text-[15px] font-bold text-gold">شارژ دستی کیف پول</h3>
 
         {selectedUser ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-darker)' }}>
-            <span>
+          <div className="mb-3.5 flex items-center gap-2.5 rounded-md bg-bg px-3.5 py-2.5">
+            <span className="text-sm">
               کاربر انتخاب‌شده: <strong>{selectedUser.name}</strong>{' '}
-              <span style={{ fontFamily: 'monospace', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{selectedUser.fifa_soul_id}</span>
+              <span className="font-mono text-xs text-ink-muted" dir="ltr">
+                {selectedUser.fifa_soul_id}
+              </span>
             </span>
-            <button
+            <Button
               type="button"
-              className="icon-btn"
-              style={{ marginRight: 'auto' }}
+              variant="outline"
+              size="icon"
+              className="me-auto h-8 w-8"
               onClick={() => {
                 setSelectedUser(null);
                 setUserResults([]);
@@ -208,102 +202,96 @@ export default function AdminEconomy() {
               }}
             >
               <X size={15} />
-            </button>
+            </Button>
           </div>
         ) : (
-          <div style={{ marginBottom: 14 }}>
-            <form onSubmit={searchUsers} style={{ display: 'flex', gap: 10, maxWidth: 420 }}>
-              <input
+          <div className="mb-3.5">
+            <form onSubmit={searchUsers} className="flex max-w-[420px] gap-2.5">
+              <Input
                 placeholder="جستجو بر اساس نام، ایمیل یا fifa soul ID..."
                 value={userQuery}
                 onChange={(e) => setUserQuery(e.target.value)}
-                style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
+                className="flex-1 rounded-md"
               />
-              <button className="btn btn-outline" type="submit">
+              <Button variant="outline" type="submit">
                 <Search size={16} />
-              </button>
+              </Button>
             </form>
             {userResults.length > 0 && (
-              <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 420 }}>
+              <div className="mt-2.5 flex max-w-[420px] flex-col gap-1.5">
                 {userResults.map((u) => (
-                  <button
+                  <Button
                     key={u.id}
                     type="button"
-                    className="btn btn-outline"
-                    style={{ justifyContent: 'flex-start', textAlign: 'right' }}
+                    variant="outline"
+                    className="justify-start rounded-md text-start"
                     onClick={() => {
                       setSelectedUser(u);
                       setUserResults([]);
                     }}
                   >
-                    {u.name} — <span style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{u.fifa_soul_id}</span> ({u.email})
-                  </button>
+                    {u.name} — <span className="font-mono text-[12px]" dir="ltr">{u.fifa_soul_id}</span> ({u.email})
+                  </Button>
                 ))}
               </div>
             )}
           </div>
         )}
 
-        <form onSubmit={adjustWallet} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div className="form-field" style={{ marginBottom: 0 }}>
-            <label>ارز</label>
-            <select value={walletForm.currency} onChange={(e) => setWalletForm({ ...walletForm, currency: e.target.value })}>
+        <form onSubmit={adjustWallet} className="flex flex-wrap items-end gap-2.5">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] text-ink-muted">ارز</label>
+            <select value={walletForm.currency} onChange={(e) => setWalletForm({ ...walletForm, currency: e.target.value })} className={fieldClass}>
               <option value="ticket">تیکت</option>
               <option value="xp">XP</option>
             </select>
           </div>
-          <div className="form-field" style={{ marginBottom: 0 }}>
-            <label>مقدار (منفی = کسر)</label>
-            <input type="number" required value={walletForm.amount} onChange={(e) => setWalletForm({ ...walletForm, amount: e.target.value })} />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] text-ink-muted">مقدار (منفی = کسر)</label>
+            <Input type="number" required value={walletForm.amount} onChange={(e) => setWalletForm({ ...walletForm, amount: e.target.value })} className="rounded-md" />
           </div>
-          <button className="btn btn-primary" type="submit">
-            اعمال
-          </button>
+          <Button type="submit">اعمال</Button>
         </form>
-      </div>
+      </Card>
 
-      <div className="card" style={{ padding: 20, marginBottom: 24 }}>
-        <h3 style={{ marginTop: 0, color: 'var(--gold)' }}>بازنشانی فصل (بایگانی + صفر کردن امتیاز فصلی)</h3>
-        <form onSubmit={resetSeason} style={{ display: 'flex', gap: 10 }}>
-          <input
-            required
-            placeholder="نام فصل، مثلاً 1405-Q3"
-            value={seasonName}
-            onChange={(e) => setSeasonName(e.target.value)}
-            style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
-          />
-          <button className="btn btn-magenta" type="submit">
+      <Card className="mb-6 p-5">
+        <h3 className="mb-3 mt-0 text-[15px] font-bold text-gold">بازنشانی فصل (بایگانی + صفر کردن امتیاز فصلی)</h3>
+        <form onSubmit={resetSeason} className="flex gap-2.5">
+          <Input required placeholder="نام فصل، مثلاً 1405-Q3" value={seasonName} onChange={(e) => setSeasonName(e.target.value)} className="flex-1 rounded-md" />
+          <Button variant="magenta" type="submit">
             بازنشانی فصل
-          </button>
+          </Button>
         </form>
-      </div>
+      </Card>
 
       {archive.length > 0 && (
-        <div className="card" style={{ overflowX: 'auto' }}>
-          <h3 style={{ padding: '18px 18px 0', color: 'var(--gold)' }}>بایگانی فصل‌های قبلی</h3>
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>کاربر</th>
-                <th>فصل</th>
-                <th>امتیاز</th>
-                <th>گرید</th>
-                <th>برد/باخت/مساوی</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Card className="overflow-hidden p-0">
+          <h3 className="p-[18px] pb-0 text-[15px] font-bold text-gold">بایگانی فصل‌های قبلی</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>کاربر</TableHead>
+                <TableHead>فصل</TableHead>
+                <TableHead>امتیاز</TableHead>
+                <TableHead>گرید</TableHead>
+                <TableHead>برد/باخت/مساوی</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {archive.map((row) => (
-                <tr key={row.id}>
-                  <td>#{row.user_id}</td>
-                  <td>{row.season_name}</td>
-                  <td>{row.season_points}</td>
-                  <td>{row.grade}</td>
-                  <td>{row.wins}/{row.losses}/{row.draws}</td>
-                </tr>
+                <TableRow key={row.id}>
+                  <TableCell>#{row.user_id}</TableCell>
+                  <TableCell>{row.season_name}</TableCell>
+                  <TableCell>{row.season_points}</TableCell>
+                  <TableCell>{row.grade}</TableCell>
+                  <TableCell>
+                    {row.wins}/{row.losses}/{row.draws}
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );

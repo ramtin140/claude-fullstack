@@ -6,8 +6,10 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { hasStaffAccess } from '../components/ProtectedRoute.jsx';
 import { parseUtc } from '../utils/datetime.js';
 import PlayerAvatarIcon from '../components/PlayerAvatarIcon.jsx';
-import '../styles/h2h.css';
-import '../styles/pages.css';
+import { Card } from '../components/ui/card.jsx';
+import { Badge } from '../components/ui/badge.jsx';
+import { Button } from '../components/ui/button.jsx';
+import { Input } from '../components/ui/input.jsx';
 
 const legStatusLabel = {
   pending_submission: 'در انتظار ثبت نتیجه',
@@ -28,19 +30,22 @@ function formatRemaining(deadline) {
   return `${hours} ساعت و ${minutes} دقیقه`;
 }
 
+const fieldClass =
+  'w-full rounded-md border border-border bg-surface px-3.5 py-3 text-sm text-ink outline-none transition-colors focus-visible:border-gold focus-visible:ring-2 focus-visible:ring-gold-light focus-visible:ring-offset-2 focus-visible:ring-offset-bg';
+
 function PlayerChip({ name, avatar, fifaSoulId, roleLabel }) {
   return (
-    <div className="opponent-chip">
-      <span className="role-tag">{roleLabel}</span>
+    <div className="mb-2.5 flex items-center gap-2 text-sm">
+      <span className="text-[13px] text-ink-muted">{roleLabel}</span>
       {avatar ? (
-        <img src={assetUrl(avatar)} alt="" />
+        <img src={assetUrl(avatar)} alt="" className="h-7 w-7 rounded-full object-cover" />
       ) : (
-        <span className="opponent-avatar-placeholder">
+        <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-bg-soft">
           <PlayerAvatarIcon seed={fifaSoulId || name} size={14} />
         </span>
       )}
-      <strong>{name || 'نامشخص'}</strong>
-      {fifaSoulId && <span className="fifa-soul-tag">{fifaSoulId}</span>}
+      <strong className="font-bold text-ink">{name || 'نامشخص'}</strong>
+      {fifaSoulId && <span className="rounded-md bg-gold/10 px-1.5 py-0.5 font-mono text-[11px] text-gold">{fifaSoulId}</span>}
     </div>
   );
 }
@@ -50,7 +55,7 @@ function PlayerChip({ name, avatar, fifaSoulId, roleLabel }) {
 // (رفت), and that swap was exactly the source of confusion being fixed here.
 function LegParticipants({ leg }) {
   return (
-    <div className="leg-participants">
+    <div className="mb-3.5 flex flex-wrap gap-x-6 gap-y-2 border-b border-dashed border-border pb-3">
       <PlayerChip name={leg.home_user_name} avatar={leg.home_user_avatar} fifaSoulId={leg.home_user_fifa_soul_id} roleLabel="میزبان:" />
       <PlayerChip name={leg.away_user_name} avatar={leg.away_user_avatar} fifaSoulId={leg.away_user_fifa_soul_id} roleLabel="میهمان:" />
     </div>
@@ -59,19 +64,33 @@ function LegParticipants({ leg }) {
 
 function ScoreInputRow({ homeLabel, homeId, awayLabel, awayId, homeValue, onHomeChange, awayValue, onAwayChange }) {
   return (
-    <div className="score-input-row">
-      <div className="score-input-col">
-        <label>
-          {homeLabel} {homeId && <span className="fifa-soul-tag">{homeId}</span>}
+    <div className="mb-3 flex items-end justify-center gap-3.5">
+      <div className="flex flex-col items-center gap-1.5">
+        <label className="text-center text-[12px] text-ink-muted">
+          {homeLabel} {homeId && <span className="rounded-md bg-gold/10 px-1.5 py-0.5 font-mono text-[11px] text-gold">{homeId}</span>}
         </label>
-        <input type="number" min={0} required value={homeValue} onChange={(e) => onHomeChange(e.target.value)} />
+        <input
+          type="number"
+          min={0}
+          required
+          value={homeValue}
+          onChange={(e) => onHomeChange(e.target.value)}
+          className="w-20 rounded-[10px] border border-border bg-bg-soft px-2.5 py-2.5 text-center text-lg font-bold text-ink outline-none focus-visible:border-gold"
+        />
       </div>
-      <span className="score-input-sep">-</span>
-      <div className="score-input-col">
-        <label>
-          {awayLabel} {awayId && <span className="fifa-soul-tag">{awayId}</span>}
+      <span className="mb-3 self-center font-bold text-ink-muted">-</span>
+      <div className="flex flex-col items-center gap-1.5">
+        <label className="text-center text-[12px] text-ink-muted">
+          {awayLabel} {awayId && <span className="rounded-md bg-gold/10 px-1.5 py-0.5 font-mono text-[11px] text-gold">{awayId}</span>}
         </label>
-        <input type="number" min={0} required value={awayValue} onChange={(e) => onAwayChange(e.target.value)} />
+        <input
+          type="number"
+          min={0}
+          required
+          value={awayValue}
+          onChange={(e) => onAwayChange(e.target.value)}
+          className="w-20 rounded-[10px] border border-border bg-bg-soft px-2.5 py-2.5 text-center text-lg font-bold text-ink outline-none focus-visible:border-gold"
+        />
       </div>
     </div>
   );
@@ -88,7 +107,11 @@ function TechnicalIssueReporter({ onReport }) {
 
   if (!open) {
     return (
-      <button type="button" className="btn-link-muted" onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-2.5 flex items-center gap-1.5 bg-transparent text-[12px] text-ink-muted outline-none hover:text-gold focus-visible:ring-2 focus-visible:ring-gold-light focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+      >
         <Wifi size={13} /> گزارش نقص فنی (پینگ/قطعی و غیره)
       </button>
     );
@@ -96,25 +119,32 @@ function TechnicalIssueReporter({ onReport }) {
 
   return (
     <form
-      style={{ marginTop: 10 }}
+      className="mt-2.5"
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);
         onReport(reason).catch((err) => setError(err.response?.data?.error || 'خطا در ثبت گزارش'));
       }}
     >
-      <div className="form-field">
-        <label>توضیح نقص فنی</label>
-        <textarea required rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثلاً: پینگ حریف بالا بود و بازی قطع و وصل می‌شد" />
+      <div className="mb-3 flex flex-col gap-1.5">
+        <label className="text-[13px] text-ink-muted">توضیح نقص فنی</label>
+        <textarea
+          required
+          rows={2}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="مثلاً: پینگ حریف بالا بود و بازی قطع و وصل می‌شد"
+          className={fieldClass}
+        />
       </div>
-      {error && <p className="error-text">{error}</p>}
-      <div style={{ display: 'flex', gap: 10 }}>
-        <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setOpen(false)}>
+      {error && <p className="mb-3 text-sm text-critical">{error}</p>}
+      <div className="flex gap-2.5">
+        <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
           انصراف
-        </button>
-        <button type="submit" className="btn btn-magenta" style={{ flex: 1 }}>
+        </Button>
+        <Button type="submit" variant="magenta" className="flex-1">
           ثبت گزارش
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -159,63 +189,62 @@ function LegCard({
   const isForfeitLoser = isParticipant && userId !== forfeitWinnerId;
 
   return (
-    <div className="card leg-card">
-      <div className="leg-title">
-        <strong>نیم‌فصل {index + 1} ({index === 0 ? 'رفت' : 'برگشت'})</strong>
-        <span className="badge badge-waiting">{legStatusLabel[leg.status]}</span>
+    <Card className="mb-4 p-[18px]">
+      <div className="mb-3 flex items-center justify-between">
+        <strong className="text-sm font-bold text-ink">
+          نیم‌فصل {index + 1} ({index === 0 ? 'رفت' : 'برگشت'})
+        </strong>
+        <Badge variant="waiting">{legStatusLabel[leg.status]}</Badge>
       </div>
 
       <LegParticipants leg={leg} />
 
       {leg.status === 'technical_issue' ? (
         <div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>
-            <Wifi size={13} style={{ verticalAlign: 'middle' }} /> نقص فنی گزارش‌شده: {leg.technical_issue_reason}
+          <p className="flex items-center justify-center gap-1.5 text-center text-sm text-ink-muted">
+            <Wifi size={13} /> نقص فنی گزارش‌شده: {leg.technical_issue_reason}
           </p>
           {isParticipant && leg.technical_issue_reported_by === userId ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>
-              در انتظار تایید حریف برای لغو مسابقه...
-            </p>
+            <p className="text-center text-sm text-ink-muted">در انتظار تایید حریف برای لغو مسابقه...</p>
           ) : isParticipant ? (
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                className="btn btn-magenta"
-                style={{ flex: 1 }}
+            <div className="flex gap-2.5">
+              <Button
+                variant="magenta"
+                className="flex-1"
                 onClick={() => onConfirmTechnicalIssue(leg.leg_number).catch((err) => setError(err.response?.data?.error || 'خطا'))}
               >
                 تایید (لغو مسابقه)
-              </button>
-              <button
-                className="btn btn-outline"
-                style={{ flex: 1 }}
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
                 onClick={() => onRejectTechnicalIssue(leg.leg_number).catch((err) => setError(err.response?.data?.error || 'خطا'))}
               >
                 رد کردن (ارجاع به کارشناسی)
-              </button>
+              </Button>
             </div>
           ) : null}
         </div>
       ) : leg.status === 'cancelled' ? (
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>
-          این نیم‌فصل به دلیل نقص فنی لغو شد.
-        </p>
+        <p className="text-center text-sm text-ink-muted">این نیم‌فصل به دلیل نقص فنی لغو شد.</p>
       ) : leg.status === 'forfeited' ? (
         <div>
-          <div className="leg-score-row">
-            <span>{leg.final_home_score}</span>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>-</span>
-            <span>{leg.final_away_score}</span>
+          <div className="mb-3 flex items-center justify-center gap-4 text-xl font-bold">
+            <span className="text-ink">{leg.final_home_score}</span>
+            <span className="text-sm text-ink-muted">-</span>
+            <span className="text-ink">{leg.final_away_score}</span>
           </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>
-            <AlertTriangle size={13} style={{ verticalAlign: 'middle' }} /> نتیجه به دلیل عدم ثبت به موقع، فرجه‌ای اعمال شد.
+          <p className="flex items-center justify-center gap-1.5 text-center text-sm text-ink-muted">
+            <AlertTriangle size={13} /> نتیجه به دلیل عدم ثبت به موقع، فرجه‌ای اعمال شد.
           </p>
           {isForfeitLoser && forfeitWindowOpen && !forfeitDisputeMode && (
-            <button className="btn btn-magenta" style={{ width: '100%' }} onClick={() => setForfeitDisputeMode(true)}>
+            <Button variant="magenta" className="mt-3 w-full" onClick={() => setForfeitDisputeMode(true)}>
               اعتراض به نتیجه فرجه‌ای ({formatRemaining(forfeitDeadline)} فرصت باقی‌مانده)
-            </button>
+            </Button>
           )}
           {isForfeitLoser && forfeitWindowOpen && forfeitDisputeMode && (
             <form
+              className="mt-3"
               onSubmit={(e) => {
                 e.preventDefault();
                 setError(null);
@@ -224,67 +253,65 @@ function LegCard({
                 );
               }}
             >
-              <div className="form-field">
-                <label>توضیحات اعتراض</label>
-                <textarea rows={2} value={evidenceText} onChange={(e) => setEvidenceText(e.target.value)} />
+              <div className="mb-3 flex flex-col gap-1.5">
+                <label className="text-[13px] text-ink-muted">توضیحات اعتراض</label>
+                <textarea rows={2} value={evidenceText} onChange={(e) => setEvidenceText(e.target.value)} className={fieldClass} />
               </div>
-              <div className="form-field">
-                <label>عکس مستندات (اختیاری)</label>
+              <div className="mb-3 flex flex-col gap-1.5">
+                <label className="text-[13px] text-ink-muted">عکس مستندات (اختیاری)</label>
                 <input
-                  className="evidence-file-input"
                   type="file"
                   accept="image/png,image/jpeg,image/webp,application/pdf"
                   onChange={(e) => setEvidenceFile(e.target.files[0] || null)}
+                  className="text-[13px] text-ink-muted file:me-3 file:rounded-full file:border-0 file:bg-surface-2 file:px-3.5 file:py-2 file:text-[13px] file:text-ink"
                 />
               </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setForfeitDisputeMode(false)}>
+              <div className="flex gap-2.5">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setForfeitDisputeMode(false)}>
                   انصراف
-                </button>
-                <button type="submit" className="btn btn-magenta" style={{ flex: 1 }}>
+                </Button>
+                <Button type="submit" variant="magenta" className="flex-1">
                   ثبت اعتراض
-                </button>
+                </Button>
               </div>
             </form>
           )}
           {isForfeitLoser && !forfeitWindowOpen && (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center' }}>
-              فرصت اعتراض به پایان رسیده است.
-            </p>
+            <p className="mt-3 text-center text-[13px] text-ink-muted">فرصت اعتراض به پایان رسیده است.</p>
           )}
         </div>
       ) : ['confirmed', 'expert_resolved'].includes(leg.status) ? (
-        <div className="leg-score-row">
-          <span>{leg.final_home_score}</span>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>-</span>
-          <span>{leg.final_away_score}</span>
+        <div className="mb-3 flex items-center justify-center gap-4 text-xl font-bold">
+          <span className="text-ink">{leg.final_home_score}</span>
+          <span className="text-sm text-ink-muted">-</span>
+          <span className="text-ink">{leg.final_away_score}</span>
           {leg.is_expert_reviewed && (
-            <span className="badge badge-live" style={{ fontSize: '0.7rem' }}>
+            <Badge variant="live" className="gap-1 text-[11px]">
               <Gavel size={12} /> نظر کارشناس
-            </span>
+            </Badge>
           )}
         </div>
       ) : leg.status === 'expert_review' ? (
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          نتیجه ثبت‌شده: {leg.submitted_home_score}-{leg.submitted_away_score} | نتیجه پیشنهادی معترض:{' '}
-          {leg.dispute_home_score}-{leg.dispute_away_score}
+        <p className="text-sm text-ink-muted">
+          نتیجه ثبت‌شده: {leg.submitted_home_score}-{leg.submitted_away_score} | نتیجه پیشنهادی معترض: {leg.dispute_home_score}-
+          {leg.dispute_away_score}
         </p>
       ) : leg.status === 'pending_submission' && isParticipant ? (
         <div>
           {deadline && (
-            <p style={{ color: deadlinePassed ? 'var(--magenta)' : 'var(--text-muted)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <p className={`mb-2 flex items-center gap-1.5 text-[13px] ${deadlinePassed ? 'text-magenta' : 'text-ink-muted'}`}>
               <Clock size={13} />
               {deadlinePassed ? 'فرجه زمانی ثبت نتیجه تمام شده است.' : `فرجه باقی‌مانده: ${formatRemaining(deadline)}`}
             </p>
           )}
           {deadlinePassed ? (
-            <button
-              className="btn btn-magenta"
-              style={{ width: '100%' }}
+            <Button
+              variant="magenta"
+              className="w-full"
               onClick={() => onClaimForfeit(leg.leg_number).catch((err) => setError(err.response?.data?.error || 'خطا در درخواست فرجه'))}
             >
               درخواست نتیجه ۳-۰ به نفع خودم (فرجه تمام شد)
-            </button>
+            </Button>
           ) : (
             <form
               onSubmit={(e) => {
@@ -305,40 +332,37 @@ function LegCard({
                 awayValue={awayScore}
                 onAwayChange={setAwayScore}
               />
-              <button className="btn btn-primary" type="submit" style={{ width: '100%' }}>
+              <Button type="submit" className="w-full">
                 ثبت نتیجه
-              </button>
+              </Button>
             </form>
           )}
-          {!deadlinePassed && (
-            <TechnicalIssueReporter onReport={(reason) => onReportTechnicalIssue(leg.leg_number, reason)} />
-          )}
+          {!deadlinePassed && <TechnicalIssueReporter onReport={(reason) => onReportTechnicalIssue(leg.leg_number, reason)} />}
         </div>
       ) : leg.status === 'pending_confirmation' && isParticipant && leg.submitted_by_id !== userId ? (
         <div>
-          <p style={{ textAlign: 'center', marginBottom: 12 }}>
-            نتیجه ثبت‌شده: <strong>{leg.submitted_home_score} - {leg.submitted_away_score}</strong>
+          <p className="mb-3 text-center">
+            نتیجه ثبت‌شده: <strong className="text-ink">{leg.submitted_home_score} - {leg.submitted_away_score}</strong>
           </p>
           {!disputeMode ? (
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                className="btn btn-primary"
-                style={{ flex: 1 }}
+            <div className="flex gap-2.5">
+              <Button
+                className="flex-1"
                 onClick={() => onConfirm(leg.leg_number).catch((err) => setError(err.response?.data?.error || 'خطا'))}
               >
                 تایید نتیجه
-              </button>
-              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setDisputeMode(true)}>
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setDisputeMode(true)}>
                 اعتراض
-              </button>
+              </Button>
             </div>
           ) : (
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 setError(null);
-                onDispute(leg.leg_number, Number(disputeHome), Number(disputeAway), evidenceText, evidenceFile).catch(
-                  (err) => setError(err.response?.data?.error || 'خطا در ثبت اعتراض')
+                onDispute(leg.leg_number, Number(disputeHome), Number(disputeAway), evidenceText, evidenceFile).catch((err) =>
+                  setError(err.response?.data?.error || 'خطا در ثبت اعتراض')
                 );
               }}
             >
@@ -352,43 +376,41 @@ function LegCard({
                 awayValue={disputeAway}
                 onAwayChange={setDisputeAway}
               />
-              <div className="form-field">
-                <label>توضیحات (اختیاری)</label>
-                <textarea rows={2} value={evidenceText} onChange={(e) => setEvidenceText(e.target.value)} />
+              <div className="mb-3 flex flex-col gap-1.5">
+                <label className="text-[13px] text-ink-muted">توضیحات (اختیاری)</label>
+                <textarea rows={2} value={evidenceText} onChange={(e) => setEvidenceText(e.target.value)} className={fieldClass} />
               </div>
-              <div className="form-field">
-                <label>عکس مستندات (اختیاری)</label>
+              <div className="mb-3 flex flex-col gap-1.5">
+                <label className="text-[13px] text-ink-muted">عکس مستندات (اختیاری)</label>
                 <input
-                  className="evidence-file-input"
                   type="file"
                   accept="image/png,image/jpeg,image/webp,application/pdf"
                   onChange={(e) => setEvidenceFile(e.target.files[0] || null)}
+                  className="text-[13px] text-ink-muted file:me-3 file:rounded-full file:border-0 file:bg-surface-2 file:px-3.5 file:py-2 file:text-[13px] file:text-ink"
                 />
               </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setDisputeMode(false)}>
+              <div className="flex gap-2.5">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setDisputeMode(false)}>
                   انصراف
-                </button>
-                <button type="submit" className="btn btn-magenta" style={{ flex: 1 }}>
+                </Button>
+                <Button type="submit" variant="magenta" className="flex-1">
                   ثبت اعتراض
-                </button>
+                </Button>
               </div>
             </form>
           )}
-          {!disputeMode && (
-            <TechnicalIssueReporter onReport={(reason) => onReportTechnicalIssue(leg.leg_number, reason)} />
-          )}
+          {!disputeMode && <TechnicalIssueReporter onReport={(reason) => onReportTechnicalIssue(leg.leg_number, reason)} />}
         </div>
       ) : leg.status === 'pending_confirmation' ? (
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+        <p className="text-sm text-ink-muted">
           نتیجه ثبت شده ({leg.submitted_home_score}-{leg.submitted_away_score})، در انتظار تایید حریف.
         </p>
       ) : (
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>در انتظار شروع.</p>
+        <p className="text-sm text-ink-muted">در انتظار شروع.</p>
       )}
 
-      {error && <p className="error-text">{error}</p>}
-    </div>
+      {error && <p className="mt-3 text-sm text-critical">{error}</p>}
+    </Card>
   );
 }
 
@@ -396,20 +418,14 @@ function TimeLimitControl({ match, onUpdate }) {
   const [hours, setHours] = useState(match.time_limit_hours || 24);
 
   return (
-    <div className="card" style={{ padding: 16, marginBottom: 24, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-      <Gavel size={16} style={{ color: 'var(--gold)' }} />
-      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>تنظیم فرجه زمانی کارشناسی (ساعت):</span>
-      <input
-        type="number"
-        min={1}
-        value={hours}
-        onChange={(e) => setHours(e.target.value)}
-        style={{ width: 90, padding: 8, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
-      />
-      <button className="btn btn-outline" style={{ padding: '6px 16px' }} onClick={() => onUpdate(hours)}>
+    <Card className="mb-6 flex flex-wrap items-center gap-2.5 p-4">
+      <Gavel size={16} className="text-gold" />
+      <span className="text-[13px] text-ink-muted">تنظیم فرجه زمانی کارشناسی (ساعت):</span>
+      <Input type="number" min={1} value={hours} onChange={(e) => setHours(e.target.value)} className="w-[90px] rounded-md" />
+      <Button variant="outline" size="sm" onClick={() => onUpdate(hours)}>
         اعمال
-      </button>
-    </div>
+      </Button>
+    </Card>
   );
 }
 
@@ -512,28 +528,26 @@ export default function H2HDetail() {
     return data;
   }
 
-  if (!match) return <div className="empty-state" style={{ padding: 60 }}>در حال بارگذاری...</div>;
+  if (!match) return <div className="flex justify-center py-16 text-ink-faint">در حال بارگذاری...</div>;
 
   return (
-    <div className="page-wrap">
-      <div className="detail-hero">
-        <div className="container">
-          <h1>مسابقه رو-در-رو #{match.id}</h1>
-          <p style={{ color: 'var(--text-muted)' }}>
-            {match.console || 'کنسول نامشخص'} — {match.game_version || 'ورژن نامشخص'} —{' '}
-            {match.stake_type === 'ticket' ? `${match.stake_amount} تیکت` : 'رایگان (XP)'}
-          </p>
-        </div>
+    <div>
+      <div className="bg-[linear-gradient(135deg,var(--color-brand-900),var(--color-bg-soft))] px-4 py-10 text-center md:px-6">
+        <h1 className="mb-2 text-2xl font-bold text-gold">مسابقه رو-در-رو #{match.id}</h1>
+        <p className="text-ink-muted">
+          {match.console || 'کنسول نامشخص'} — {match.game_version || 'ورژن نامشخص'} —{' '}
+          {match.stake_type === 'ticket' ? `${match.stake_amount} تیکت` : 'رایگان (XP)'}
+        </p>
       </div>
 
-      <div className="container detail-body">
+      <div className="mx-auto max-w-[900px] px-4 py-10 md:px-6">
         {hasStaffAccess(user, ['senior_admin', 'match_expert']) && match.status === 'locked' && (
           <TimeLimitControl match={match} onUpdate={updateTimeLimit} />
         )}
 
         {match.status === 'completed' && (
-          <div className="winner-banner">
-            <Trophy size={20} style={{ verticalAlign: 'middle', marginLeft: 8 }} />
+          <div className="mb-5 rounded-md border border-gold/30 bg-gradient-to-br from-gold/15 to-transparent p-5 text-center font-bold text-gold">
+            <Trophy size={20} className="me-2 inline-block align-middle" />
             {match.winner_id
               ? user && match.winner_id === user.id
                 ? 'تبریک! شما برنده این مسابقه شدید.'
@@ -543,40 +557,38 @@ export default function H2HDetail() {
         )}
 
         {match.status === 'completed' && match.winner_id && match.stake_type === 'ticket' && match.platform_fee_amount !== null && (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: -12, marginBottom: 20 }}>
+          <p className="-mt-3 mb-5 text-center text-[13px] text-ink-muted">
             مبلغ واریزی به برنده: {match.stake_amount * 2 - match.platform_fee_amount} تیکت (کارمزد سایت: {match.platform_fee_amount} تیکت)
           </p>
         )}
 
         {match.status === 'cancelled' && (
-          <div className="winner-banner" style={{ borderColor: 'var(--magenta)', color: 'var(--magenta)' }}>
-            <Wifi size={20} style={{ verticalAlign: 'middle', marginLeft: 8 }} />
+          <div className="mb-5 rounded-md border border-magenta/40 bg-gradient-to-br from-magenta/15 to-transparent p-5 text-center font-bold text-magenta-light">
+            <Wifi size={20} className="me-2 inline-block align-middle" />
             این مسابقه به دلیل نقص فنی لغو شد{match.cancel_reason ? `: ${match.cancel_reason}` : ''} — مبلغ ورودی بازگردانده شد.
           </div>
         )}
 
         {match.status === 'open' && user && match.creator_id !== user.id && (
-          <div className="card" style={{ padding: 20, marginBottom: 24 }}>
+          <Card className="mb-6 p-5">
             {match.is_private && (
-              <div className="form-field">
-                <label>رمز عبور مسابقه</label>
-                <input type="text" value={joinPassword} onChange={(e) => setJoinPassword(e.target.value)} />
+              <div className="mb-3 flex flex-col gap-1.5">
+                <label className="text-[13px] text-ink-muted">رمز عبور مسابقه</label>
+                <Input type="text" value={joinPassword} onChange={(e) => setJoinPassword(e.target.value)} className="rounded-md" />
               </div>
             )}
-            <button className="btn btn-primary" onClick={handleJoin}>
-              جوین شدن به این مسابقه
-            </button>
-            {message && <p className="success-text" style={{ marginTop: 10 }}>{message}</p>}
-            {error && <p className="error-text" style={{ marginTop: 10 }}>{error}</p>}
-          </div>
+            <Button onClick={handleJoin}>جوین شدن به این مسابقه</Button>
+            {message && <p className="mt-2.5 text-sm font-medium text-success">{message}</p>}
+            {error && <p className="mt-2.5 text-sm text-critical">{error}</p>}
+          </Card>
         )}
         {match.status === 'open' && !user && (
-          <div className="empty-state">برای جوین شدن ابتدا وارد حساب کاربری خود شوید.</div>
+          <div className="py-10 text-center text-sm text-ink-faint">برای جوین شدن ابتدا وارد حساب کاربری خود شوید.</div>
         )}
 
         {legs.length > 0 && (
           <div>
-            <h3 style={{ color: 'var(--gold)' }}>نیم‌فصل‌های مسابقه</h3>
+            <h3 className="mb-4 text-lg font-bold text-gold">نیم‌فصل‌های مسابقه</h3>
             {legs.map((leg, i) => (
               <LegCard
                 key={leg.id}
@@ -596,9 +608,9 @@ export default function H2HDetail() {
           </div>
         )}
 
-        <Link to="/h2h" className="btn btn-outline" style={{ marginTop: 20 }}>
-          بازگشت به لیست مسابقات
-        </Link>
+        <Button asChild variant="outline" className="mt-5">
+          <Link to="/h2h">بازگشت به لیست مسابقات</Link>
+        </Button>
       </div>
     </div>
   );

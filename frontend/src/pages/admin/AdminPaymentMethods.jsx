@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { api } from '../../api/client.js';
-import '../../styles/admin.css';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table.jsx';
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from '../../components/ui/dialog.jsx';
 
 const typeLabel = { card_to_card: 'کارت به کارت', bank_account: 'واریز به حساب' };
 
@@ -21,6 +26,18 @@ const emptyForm = {
   is_active: true,
   sort_order: 0,
 };
+
+const fieldClass =
+  'w-full rounded-md border border-border bg-bg px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus-visible:border-gold';
+
+function FormField({ label, children }) {
+  return (
+    <div className="mb-3.5 flex flex-col gap-1.5">
+      <label className="text-[13px] text-ink-muted">{label}</label>
+      {children}
+    </div>
+  );
+}
 
 function MethodModal({ method, onClose, onDone }) {
   const [form, setForm] = useState(method ? { ...emptyForm, ...method, max_amount: method.max_amount ?? '' } : emptyForm);
@@ -48,91 +65,79 @@ function MethodModal({ method, onClose, onDone }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="card modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2>{method ? 'ویرایش روش پرداخت' : 'روش پرداخت جدید'}</h2>
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent>
+        <DialogTitle>{method ? 'ویرایش روش پرداخت' : 'روش پرداخت جدید'}</DialogTitle>
         <form onSubmit={submit}>
-          <div className="form-field">
-            <label>نوع</label>
-            <select value={form.type} onChange={(e) => set('type', e.target.value)} disabled={!!method}>
+          <FormField label="نوع">
+            <select value={form.type} onChange={(e) => set('type', e.target.value)} disabled={!!method} className={fieldClass}>
               <option value="card_to_card">کارت به کارت</option>
               <option value="bank_account">واریز به حساب</option>
             </select>
-          </div>
-          <div className="form-field">
-            <label>عنوان نمایشی</label>
-            <input value={form.title} onChange={(e) => set('title', e.target.value)} required />
-          </div>
+          </FormField>
+          <FormField label="عنوان نمایشی">
+            <Input value={form.title} onChange={(e) => set('title', e.target.value)} required className="rounded-md" />
+          </FormField>
 
           {form.type === 'card_to_card' ? (
             <>
-              <div className="form-field">
-                <label>شماره کارت</label>
-                <input value={form.card_number || ''} onChange={(e) => set('card_number', e.target.value)} style={{ direction: 'ltr', textAlign: 'left' }} required />
-              </div>
-              <div className="form-field">
-                <label>نام صاحب کارت</label>
-                <input value={form.card_holder_name || ''} onChange={(e) => set('card_holder_name', e.target.value)} />
-              </div>
+              <FormField label="شماره کارت">
+                <Input value={form.card_number || ''} onChange={(e) => set('card_number', e.target.value)} dir="ltr" required className="rounded-md text-start" />
+              </FormField>
+              <FormField label="نام صاحب کارت">
+                <Input value={form.card_holder_name || ''} onChange={(e) => set('card_holder_name', e.target.value)} className="rounded-md" />
+              </FormField>
             </>
           ) : (
             <>
-              <div className="form-field">
-                <label>شماره شبا</label>
-                <input value={form.iban || ''} onChange={(e) => set('iban', e.target.value)} style={{ direction: 'ltr', textAlign: 'left' }} required />
-              </div>
-              <div className="form-field">
-                <label>نام صاحب حساب</label>
-                <input value={form.account_holder_name || ''} onChange={(e) => set('account_holder_name', e.target.value)} />
-              </div>
-              <div className="form-field">
-                <label>نام بانک</label>
-                <input value={form.bank_name || ''} onChange={(e) => set('bank_name', e.target.value)} />
-              </div>
+              <FormField label="شماره شبا">
+                <Input value={form.iban || ''} onChange={(e) => set('iban', e.target.value)} dir="ltr" required className="rounded-md text-start" />
+              </FormField>
+              <FormField label="نام صاحب حساب">
+                <Input value={form.account_holder_name || ''} onChange={(e) => set('account_holder_name', e.target.value)} className="rounded-md" />
+              </FormField>
+              <FormField label="نام بانک">
+                <Input value={form.bank_name || ''} onChange={(e) => set('bank_name', e.target.value)} className="rounded-md" />
+              </FormField>
             </>
           )}
 
-          <div className="form-field">
-            <label>توضیحات برای کاربر (اختیاری)</label>
-            <textarea rows={2} value={form.instructions || ''} onChange={(e) => set('instructions', e.target.value)} />
+          <FormField label="توضیحات برای کاربر (اختیاری)">
+            <textarea rows={2} value={form.instructions || ''} onChange={(e) => set('instructions', e.target.value)} className={fieldClass} />
+          </FormField>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="کارمزد درصدی (%)">
+              <Input type="number" step="0.1" min={0} value={form.fee_percent} onChange={(e) => set('fee_percent', e.target.value)} className="rounded-md" />
+            </FormField>
+            <FormField label="کارمزد ثابت (تومان)">
+              <Input type="number" min={0} value={form.fee_fixed} onChange={(e) => set('fee_fixed', e.target.value)} className="rounded-md" />
+            </FormField>
+            <FormField label="حداقل مبلغ (تومان)">
+              <Input type="number" min={0} value={form.min_amount} onChange={(e) => set('min_amount', e.target.value)} className="rounded-md" />
+            </FormField>
+            <FormField label="حداکثر مبلغ (تومان، اختیاری)">
+              <Input type="number" min={0} value={form.max_amount} onChange={(e) => set('max_amount', e.target.value)} className="rounded-md" />
+            </FormField>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div className="form-field">
-              <label>کارمزد درصدی (%)</label>
-              <input type="number" step="0.1" min={0} value={form.fee_percent} onChange={(e) => set('fee_percent', e.target.value)} />
-            </div>
-            <div className="form-field">
-              <label>کارمزد ثابت (تومان)</label>
-              <input type="number" min={0} value={form.fee_fixed} onChange={(e) => set('fee_fixed', e.target.value)} />
-            </div>
-            <div className="form-field">
-              <label>حداقل مبلغ (تومان)</label>
-              <input type="number" min={0} value={form.min_amount} onChange={(e) => set('min_amount', e.target.value)} />
-            </div>
-            <div className="form-field">
-              <label>حداکثر مبلغ (تومان، اختیاری)</label>
-              <input type="number" min={0} value={form.max_amount} onChange={(e) => set('max_amount', e.target.value)} />
-            </div>
-          </div>
-
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, cursor: 'pointer' }}>
-            <input type="checkbox" checked={!!form.is_active} onChange={(e) => set('is_active', e.target.checked)} />
+          <label className="mb-4 flex cursor-pointer items-center gap-2 text-sm text-ink">
+            <input type="checkbox" checked={!!form.is_active} onChange={(e) => set('is_active', e.target.checked)} className="h-4 w-4 accent-gold" />
             فعال (برای کاربران نمایش داده شود)
           </label>
 
-          {error && <p className="error-text">{error}</p>}
-          <div className="modal-actions">
-            <button type="button" className="btn btn-outline" onClick={onClose}>
+          {error && <p className="mb-3.5 text-sm text-critical">{error}</p>}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
               انصراف
-            </button>
-            <button type="submit" className="btn btn-primary" disabled={submitting}>
+            </Button>
+            <Button type="submit" disabled={submitting}>
               {submitting ? 'در حال ذخیره...' : 'ذخیره'}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -165,71 +170,67 @@ export default function AdminPaymentMethods() {
 
   return (
     <div>
-      <div className="admin-header">
-        <h1>روش‌های شارژ کیف پول</h1>
-        <button className="btn btn-primary" onClick={() => setModalMethod(null)}>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-gold">روش‌های شارژ کیف پول</h1>
+        <Button onClick={() => setModalMethod(null)}>
           <Plus size={16} /> روش جدید
-        </button>
+        </Button>
       </div>
-      {error && <p className="error-text">{error}</p>}
+      {error && <p className="mb-4 text-sm text-critical">{error}</p>}
 
       {methods.length === 0 ? (
-        <div className="empty-state">هنوز روش پرداختی تعریف نشده است.</div>
+        <div className="rounded-md border border-dashed border-border py-16 text-center text-sm text-ink-faint">هنوز روش پرداختی تعریف نشده است.</div>
       ) : (
-        <div className="card" style={{ overflowX: 'auto' }}>
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>عنوان</th>
-                <th>نوع</th>
-                <th>اطلاعات</th>
-                <th>کارمزد</th>
-                <th>محدوده مبلغ</th>
-                <th>وضعیت</th>
-                <th>عملیات</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Card className="overflow-hidden p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>عنوان</TableHead>
+                <TableHead>نوع</TableHead>
+                <TableHead>اطلاعات</TableHead>
+                <TableHead>کارمزد</TableHead>
+                <TableHead>محدوده مبلغ</TableHead>
+                <TableHead>وضعیت</TableHead>
+                <TableHead>عملیات</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {methods.map((m) => (
-                <tr key={m.id}>
-                  <td>{m.title}</td>
-                  <td>{typeLabel[m.type]}</td>
-                  <td style={{ fontFamily: 'monospace', fontSize: '0.78rem', direction: 'ltr', textAlign: 'left' }}>
+                <TableRow key={m.id}>
+                  <TableCell>{m.title}</TableCell>
+                  <TableCell>{typeLabel[m.type]}</TableCell>
+                  <TableCell className="font-mono text-xs" dir="ltr">
                     {m.type === 'card_to_card' ? m.card_number : m.iban}
-                  </td>
-                  <td>
+                  </TableCell>
+                  <TableCell>
                     {m.fee_percent > 0 && `${m.fee_percent}%`}
                     {m.fee_percent > 0 && m.fee_fixed > 0 && ' + '}
                     {m.fee_fixed > 0 && `${m.fee_fixed.toLocaleString('fa-IR')} ت`}
                     {m.fee_percent === 0 && m.fee_fixed === 0 && 'بدون کارمزد'}
-                  </td>
-                  <td>
+                  </TableCell>
+                  <TableCell>
                     {m.min_amount.toLocaleString('fa-IR')} تا {m.max_amount ? m.max_amount.toLocaleString('fa-IR') : 'نامحدود'}
-                  </td>
-                  <td>
-                    <button
-                      className={`badge ${m.is_active ? 'badge-live' : 'badge-finished'}`}
-                      style={{ cursor: 'pointer', border: 'none' }}
-                      onClick={() => toggleActive(m)}
-                    >
-                      {m.is_active ? 'فعال' : 'غیرفعال'}
+                  </TableCell>
+                  <TableCell>
+                    <button type="button" onClick={() => toggleActive(m)} className="cursor-pointer bg-transparent">
+                      <Badge variant={m.is_active ? 'live' : 'finished'}>{m.is_active ? 'فعال' : 'غیرفعال'}</Badge>
                     </button>
-                  </td>
-                  <td>
-                    <div className="row-actions">
-                      <button className="icon-btn" onClick={() => setModalMethod(m)}>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setModalMethod(m)}>
                         <Pencil size={14} />
-                      </button>
-                      <button className="icon-btn" onClick={() => remove(m)}>
+                      </Button>
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => remove(m)}>
                         <Trash2 size={14} />
-                      </button>
+                      </Button>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       {modalMethod !== undefined && (

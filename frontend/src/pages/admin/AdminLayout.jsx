@@ -3,7 +3,7 @@ import { LayoutDashboard, Trophy, Swords, Newspaper, Users, Sliders, Gavel, Doll
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useRealtime } from '../../context/RealtimeContext.jsx';
 import { hasStaffAccess } from '../../components/ProtectedRoute.jsx';
-import '../../styles/admin.css';
+import { cn } from '../../lib/utils.js';
 
 const links = [
   { to: '/admin', label: 'داشبورد', icon: LayoutDashboard, end: true, roles: ['senior_admin', 'writer', 'match_expert'] },
@@ -29,22 +29,34 @@ export default function AdminLayout() {
   const visibleLinks = links.filter((l) => hasStaffAccess(user, l.roles));
 
   return (
-    <div className="admin-layout">
-      <aside className="admin-sidebar">
+    <div className="grid min-h-[calc(100vh-70px)] grid-cols-1 items-start md:grid-cols-[220px_1fr]">
+      <aside className="sticky top-[70px] z-40 flex gap-1.5 overflow-x-auto border-b border-border bg-bg px-3.5 py-3 md:h-[calc(100vh-70px)] md:flex-col md:overflow-x-visible md:overflow-y-auto md:border-b-0 md:border-e md:py-6">
         {visibleLinks.map(({ to, label, icon: Icon, end, dotKey }) => {
           const showDot = dotKey && (realtime?.[dotKey] ?? 0) > 0;
           return (
-            <NavLink key={to} to={to} end={end}>
-              <span className="admin-link-icon">
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                cn(
+                  'flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-[10px] px-3.5 py-2.5 text-sm text-ink-muted transition-colors md:whitespace-normal',
+                  isActive ? 'bg-gold/10 text-gold' : 'hover:bg-gold/10 hover:text-gold'
+                )
+              }
+            >
+              <span className="relative inline-flex">
                 <Icon size={18} />
-                {showDot && <span className="admin-alert-dot" />}
+                {showDot && (
+                  <span className="absolute -left-1 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-critical shadow-[0_0_0_2px_var(--color-bg-darker),0_0_8px_rgba(255,107,129,0.8)]" />
+                )}
               </span>
               {label}
             </NavLink>
           );
         })}
       </aside>
-      <main className="admin-content">
+      <main className="min-w-0 p-4 md:p-[30px]">
         <Outlet />
       </main>
     </div>

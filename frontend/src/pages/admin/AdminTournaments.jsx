@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Pencil, Trash2, Shuffle, Eye } from 'lucide-react';
 import { api } from '../../api/client.js';
-import '../../styles/admin.css';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table.jsx';
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from '../../components/ui/dialog.jsx';
 
 const emptyForm = {
   title: '',
@@ -16,6 +21,18 @@ const emptyForm = {
 };
 
 const typeLabel = { league: 'لیگ', cup: 'کاپ', playoff: 'پلی‌آف' };
+
+const fieldClass =
+  'w-full rounded-md border border-border bg-bg px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus-visible:border-gold';
+
+function FormField({ label, children }) {
+  return (
+    <div className="mb-3.5 flex flex-col gap-1.5">
+      <label className="text-[13px] text-ink-muted">{label}</label>
+      {children}
+    </div>
+  );
+}
 
 export default function AdminTournaments() {
   const [tournaments, setTournaments] = useState([]);
@@ -77,148 +94,138 @@ export default function AdminTournaments() {
 
   return (
     <div>
-      <div className="admin-header">
-        <h1>مدیریت تورنمنت‌ها</h1>
-        <button className="btn btn-primary" onClick={openCreate}>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-gold">مدیریت تورنمنت‌ها</h1>
+        <Button onClick={openCreate}>
           <Plus size={16} /> تورنمنت جدید
-        </button>
+        </Button>
       </div>
 
-      <div className="card" style={{ overflowX: 'auto' }}>
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>عنوان</th>
-              <th>نوع</th>
-              <th>شرکت‌کننده</th>
-              <th>وضعیت</th>
-              <th>برکت/جدول</th>
-              <th>عملیات</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Card className="overflow-hidden p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>عنوان</TableHead>
+              <TableHead>نوع</TableHead>
+              <TableHead>شرکت‌کننده</TableHead>
+              <TableHead>وضعیت</TableHead>
+              <TableHead>برکت/جدول</TableHead>
+              <TableHead>عملیات</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {tournaments.map((t) => (
-              <tr key={t.id}>
-                <td>{t.title}</td>
-                <td>
+              <TableRow key={t.id}>
+                <TableCell>{t.title}</TableCell>
+                <TableCell>
                   {typeLabel[t.type] || t.type}
                   {t.type === 'cup' && t.bracket_size ? ` (${t.bracket_size} نفره)` : ''}
-                </td>
-                <td>{t.participant_count}</td>
-                <td>{t.status}</td>
-                <td>
+                </TableCell>
+                <TableCell>{t.participant_count}</TableCell>
+                <TableCell>{t.status}</TableCell>
+                <TableCell>
                   {t.bracket_generated ? (
-                    <span className="badge badge-live">ساخته‌شده</span>
+                    <Badge variant="live">ساخته‌شده</Badge>
                   ) : (
-                    <button className="btn btn-outline" style={{ padding: '6px 14px' }} onClick={() => handleGenerate(t)}>
+                    <Button variant="outline" size="sm" onClick={() => handleGenerate(t)}>
                       <Shuffle size={14} /> ساخت برکت/جدول
-                    </button>
+                    </Button>
                   )}
-                </td>
-                <td>
-                  <div className="row-actions">
-                    <Link to={`/tournaments/${t.id}`} className="icon-btn" title="مشاهده">
-                      <Eye size={15} />
-                    </Link>
-                    <button className="icon-btn" onClick={() => openEdit(t)}>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button asChild variant="outline" size="icon" className="h-8 w-8" title="مشاهده">
+                      <Link to={`/tournaments/${t.id}`}>
+                        <Eye size={15} />
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEdit(t)}>
                       <Pencil size={15} />
-                    </button>
-                    <button className="icon-btn" onClick={() => handleDelete(t.id)}>
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDelete(t.id)}>
                       <Trash2 size={15} />
-                    </button>
+                    </Button>
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
 
-      {modalOpen && (
-        <div className="modal-overlay" onClick={() => setModalOpen(false)}>
-          <div className="card modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2>{editing ? 'ویرایش تورنمنت' : 'تورنمنت جدید'}</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="form-field">
-                <label>عنوان</label>
-                <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-              </div>
-              <div className="form-field">
-                <label>نوع</label>
-                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                  <option value="league">لیگ (جدول امتیازات)</option>
-                  <option value="cup">کاپ (برکت حذفی)</option>
-                  <option value="playoff">پلی‌آف (قرعه‌کشی تصادفی)</option>
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogTitle>{editing ? 'ویرایش تورنمنت' : 'تورنمنت جدید'}</DialogTitle>
+          <form onSubmit={handleSubmit}>
+            <FormField label="عنوان">
+              <Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="rounded-md" />
+            </FormField>
+            <FormField label="نوع">
+              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={fieldClass}>
+                <option value="league">لیگ (جدول امتیازات)</option>
+                <option value="cup">کاپ (برکت حذفی)</option>
+                <option value="playoff">پلی‌آف (قرعه‌کشی تصادفی)</option>
+              </select>
+            </FormField>
+            {form.type === 'cup' && (
+              <FormField label="اندازه کاپ">
+                <select
+                  value={form.bracket_size || 4}
+                  onChange={(e) => setForm({ ...form, bracket_size: Number(e.target.value) })}
+                  className={fieldClass}
+                >
+                  <option value={4}>۴ نفره</option>
+                  <option value={8}>۸ نفره</option>
+                  <option value={16}>۱۶ نفره</option>
                 </select>
-              </div>
-              {form.type === 'cup' && (
-                <div className="form-field">
-                  <label>اندازه کاپ</label>
-                  <select
-                    value={form.bracket_size || 4}
-                    onChange={(e) => setForm({ ...form, bracket_size: Number(e.target.value) })}
-                  >
-                    <option value={4}>۴ نفره</option>
-                    <option value={8}>۸ نفره</option>
-                    <option value={16}>۱۶ نفره</option>
-                  </select>
-                </div>
-              )}
-              <div className="form-field">
-                <label>توضیحات</label>
-                <textarea
-                  rows={3}
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                />
-              </div>
-              <div className="form-field">
-                <label>وضعیت</label>
-                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                  <option value="upcoming">در انتظار شروع</option>
-                  <option value="in_progress">در حال اجرا</option>
-                  <option value="finished">پایان‌یافته</option>
-                </select>
-              </div>
-              <div className="form-field">
-                <label>هزینه ورودی (تومان)</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={form.entry_fee}
-                  onChange={(e) => setForm({ ...form, entry_fee: Number(e.target.value) })}
-                />
-              </div>
-              <div className="form-field">
-                <label>حداکثر ظرفیت</label>
-                <input
-                  type="number"
-                  min={2}
-                  value={form.max_players}
-                  onChange={(e) => setForm({ ...form, max_players: Number(e.target.value) })}
-                />
-              </div>
-              <div className="form-field">
-                <label>تاریخ شروع</label>
-                <input
-                  type="date"
-                  value={form.start_date || ''}
-                  onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                />
-              </div>
-              {error && <p className="error-text">{error}</p>}
-              <div className="modal-actions">
-                <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>
-                  انصراف
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  ذخیره
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              </FormField>
+            )}
+            <FormField label="توضیحات">
+              <textarea
+                rows={3}
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className={fieldClass}
+              />
+            </FormField>
+            <FormField label="وضعیت">
+              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={fieldClass}>
+                <option value="upcoming">در انتظار شروع</option>
+                <option value="in_progress">در حال اجرا</option>
+                <option value="finished">پایان‌یافته</option>
+              </select>
+            </FormField>
+            <FormField label="هزینه ورودی (تومان)">
+              <Input
+                type="number"
+                min={0}
+                value={form.entry_fee}
+                onChange={(e) => setForm({ ...form, entry_fee: Number(e.target.value) })}
+                className="rounded-md"
+              />
+            </FormField>
+            <FormField label="حداکثر ظرفیت">
+              <Input
+                type="number"
+                min={2}
+                value={form.max_players}
+                onChange={(e) => setForm({ ...form, max_players: Number(e.target.value) })}
+                className="rounded-md"
+              />
+            </FormField>
+            <FormField label="تاریخ شروع">
+              <Input type="date" value={form.start_date || ''} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="rounded-md" />
+            </FormField>
+            {error && <p className="mb-3.5 text-sm text-critical">{error}</p>}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
+                انصراف
+              </Button>
+              <Button type="submit">ذخیره</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

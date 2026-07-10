@@ -1,9 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, CreditCard } from 'lucide-react';
+import { Camera, CreditCard, CheckCircle2, AlertCircle } from 'lucide-react';
 import { api, assetUrl } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import PlayerAvatarIcon from '../components/PlayerAvatarIcon.jsx';
-import '../styles/pages.css';
+import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar.jsx';
+import { Card } from '../components/ui/card.jsx';
+import { Input } from '../components/ui/input.jsx';
+import { Button } from '../components/ui/button.jsx';
+
+function FormField({ label, children }) {
+  return (
+    <div className="mb-4 flex flex-col gap-1.5">
+      <label className="text-[13px] text-ink-muted">{label}</label>
+      {children}
+    </div>
+  );
+}
 
 export default function Profile() {
   const { user, refreshUser } = useAuth();
@@ -65,81 +77,86 @@ export default function Profile() {
   if (!user) return null;
 
   return (
-    <div className="page-wrap">
-      <div className="page-header">
-        <h1>پروفایل من</h1>
-        <p>اطلاعات حساب کاربری، شناسه‌های کنسول و اطلاعات بانکی برای برداشت تیکت</p>
+    <div>
+      <div className="px-4 pb-5 pt-10 text-center md:px-6">
+        <h1 className="mb-2 text-2xl font-bold text-gold">پروفایل من</h1>
+        <p className="text-ink-muted">اطلاعات حساب کاربری، شناسه‌های کنسول و اطلاعات بانکی برای برداشت تیکت</p>
       </div>
 
-      <div className="container" style={{ paddingBottom: 60, maxWidth: 640 }}>
-        <div className="card" style={{ padding: 24, marginBottom: 24, textAlign: 'center' }}>
-          <div
-            className="profile-avatar-wrap"
+      <div className="mx-auto max-w-[640px] px-4 pb-16 pt-4 md:px-6">
+        <Card className="mb-6 flex flex-col items-center p-6 text-center">
+          <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             title="تغییر عکس پروفایل"
+            className="group relative rounded-full bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-gold-light focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           >
-            {avatarUrl ? (
-              <img src={assetUrl(avatarUrl)} alt={user.name} className="profile-avatar" />
-            ) : (
-              <div className="profile-avatar profile-avatar-placeholder">
+            <Avatar className="h-24 w-24 border-2 border-gold">
+              {avatarUrl ? <AvatarImage src={assetUrl(avatarUrl)} alt={user.name} /> : null}
+              <AvatarFallback>
                 <PlayerAvatarIcon seed={user.id} size={36} />
-              </div>
-            )}
-            <span className="profile-avatar-edit">
+              </AvatarFallback>
+            </Avatar>
+            <span className="absolute -bottom-1 -start-1 flex h-7 w-7 items-center justify-center rounded-full bg-gold text-[#241102] shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
               <Camera size={14} />
             </span>
-          </div>
+          </button>
           <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={handleAvatarChange} />
-          <h2 style={{ margin: '12px 0 2px' }}>{user.name}</h2>
-          <p style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '0.85rem' }}>
-            fifa soul ID: {user.fifa_soul_id}
+          <h2 className="mb-0.5 mt-3 text-lg font-bold text-ink">{user.name}</h2>
+          <p className="font-mono text-[13px] text-ink-muted">fifa soul ID: {user.fifa_soul_id}</p>
+        </Card>
+
+        {message && (
+          <p className="mb-4 flex items-center gap-1.5 text-sm font-medium text-success">
+            <CheckCircle2 size={15} /> {message}
           </p>
-        </div>
+        )}
+        {error && (
+          <p className="mb-4 flex items-center gap-1.5 text-sm text-critical">
+            <AlertCircle size={14} /> {error}
+          </p>
+        )}
 
-        {message && <p className="success-text">{message}</p>}
-        {error && <p className="error-text">{error}</p>}
+        <Card className="p-6">
+        <form onSubmit={handleSave}>
+          <h3 className="mb-4 text-base font-bold text-gold">شناسه‌های کنسول</h3>
+          <FormField label="PSN ID">
+            <Input value={form.psn_id} onChange={(e) => setForm({ ...form, psn_id: e.target.value })} className="rounded-md" />
+          </FormField>
+          <FormField label="XBOX ID">
+            <Input value={form.xbox_id} onChange={(e) => setForm({ ...form, xbox_id: e.target.value })} className="rounded-md" />
+          </FormField>
+          <FormField label="Steam ID">
+            <Input value={form.steam_id} onChange={(e) => setForm({ ...form, steam_id: e.target.value })} className="rounded-md" />
+          </FormField>
 
-        <form className="card" style={{ padding: 24 }} onSubmit={handleSave}>
-          <h3 style={{ marginTop: 0, color: 'var(--gold)' }}>شناسه‌های کنسول</h3>
-          <div className="form-field">
-            <label>PSN ID</label>
-            <input value={form.psn_id} onChange={(e) => setForm({ ...form, psn_id: e.target.value })} />
-          </div>
-          <div className="form-field">
-            <label>XBOX ID</label>
-            <input value={form.xbox_id} onChange={(e) => setForm({ ...form, xbox_id: e.target.value })} />
-          </div>
-          <div className="form-field">
-            <label>Steam ID</label>
-            <input value={form.steam_id} onChange={(e) => setForm({ ...form, steam_id: e.target.value })} />
-          </div>
-
-          <h3 style={{ color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h3 className="mb-4 mt-2 flex items-center gap-2 text-base font-bold text-gold">
             <CreditCard size={18} /> اطلاعات بانکی (برای برداشت تیکت به وجه نقد)
           </h3>
-          <div className="form-field">
-            <label>شماره شبا (IBAN)</label>
-            <input
+          <FormField label="شماره شبا (IBAN)">
+            <Input
               placeholder="IRxxxxxxxxxxxxxxxxxxxxxxxx"
               value={form.iban}
               onChange={(e) => setForm({ ...form, iban: e.target.value })}
-              style={{ direction: 'ltr', textAlign: 'left' }}
+              dir="ltr"
+              className="rounded-md text-start"
             />
-          </div>
-          <div className="form-field">
-            <label>شماره کارت (۱۶ رقم)</label>
-            <input
+          </FormField>
+          <FormField label="شماره کارت (۱۶ رقم)">
+            <Input
               placeholder="6037xxxxxxxxxxxx"
               value={form.card_number}
               onChange={(e) => setForm({ ...form, card_number: e.target.value })}
-              style={{ direction: 'ltr', textAlign: 'left' }}
+              dir="ltr"
+              className="rounded-md text-start"
             />
-          </div>
+          </FormField>
 
-          <button className="btn btn-primary" type="submit" disabled={saving} style={{ width: '100%' }}>
+          <Button type="submit" disabled={saving} className="w-full">
             {saving ? 'در حال ذخیره...' : 'ذخیره پروفایل'}
-          </button>
+          </Button>
         </form>
+        </Card>
       </div>
     </div>
   );

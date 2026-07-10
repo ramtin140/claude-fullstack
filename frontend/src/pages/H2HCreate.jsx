@@ -1,7 +1,23 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AlertCircle } from 'lucide-react';
 import { api } from '../api/client.js';
-import '../styles/auth.css';
+import { Card } from '../components/ui/card.jsx';
+import { Input } from '../components/ui/input.jsx';
+import { Button } from '../components/ui/button.jsx';
+
+const fieldClass =
+  'w-full rounded-md border border-border bg-surface px-3.5 py-3 text-sm text-ink outline-none transition-colors focus-visible:border-gold focus-visible:ring-2 focus-visible:ring-gold-light focus-visible:ring-offset-2 focus-visible:ring-offset-bg';
+
+function FormField({ label, children, hint }) {
+  return (
+    <div className="mb-4 flex flex-col gap-1.5">
+      <label className="text-[13px] text-ink-muted">{label}</label>
+      {children}
+      {hint && <p className="text-[12px] text-ink-faint">{hint}</p>}
+    </div>
+  );
+}
 
 export default function H2HCreate() {
   const navigate = useNavigate();
@@ -39,34 +55,32 @@ export default function H2HCreate() {
   }
 
   return (
-    <div className="auth-wrap">
-      <div className="card auth-card" style={{ maxWidth: 480 }}>
-        <h1>ساخت مسابقه رو-در-رو</h1>
-        <p className="subtitle">حریف جوین شود، مسابقه قفل و شروع می‌شود</p>
+    <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4 py-10">
+      <Card className="w-full max-w-[480px] p-8">
+        <h1 className="mb-1.5 text-center text-xl font-bold text-gold">ساخت مسابقه رو-در-رو</h1>
+        <p className="mb-7 text-center text-sm text-ink-muted">حریف جوین شود، مسابقه قفل و شروع می‌شود</p>
 
         <form onSubmit={handleSubmit}>
-          <div className="form-field">
-            <label>نوع ورودی</label>
-            <select value={form.stake_type} onChange={(e) => setForm({ ...form, stake_type: e.target.value })}>
+          <FormField label="نوع ورودی">
+            <select value={form.stake_type} onChange={(e) => setForm({ ...form, stake_type: e.target.value })} className={fieldClass}>
               <option value="ticket">تیکتی (۱ تا ۵ تیکت)</option>
               <option value="xp">رایگان (بر اساس اکسپرینس)</option>
             </select>
-          </div>
+          </FormField>
           {form.stake_type === 'ticket' && (
-            <div className="form-field">
-              <label>تعداد تیکت</label>
-              <input
+            <FormField label="تعداد تیکت">
+              <Input
                 type="number"
                 min={1}
                 max={5}
                 value={form.stake_amount}
                 onChange={(e) => setForm({ ...form, stake_amount: Number(e.target.value) })}
+                className="rounded-md"
               />
-            </div>
+            </FormField>
           )}
-          <div className="form-field">
-            <label>کنسول</label>
-            <select value={form.console} onChange={(e) => setForm({ ...form, console: e.target.value })}>
+          <FormField label="کنسول">
+            <select value={form.console} onChange={(e) => setForm({ ...form, console: e.target.value })} className={fieldClass}>
               <option value="">انتخاب کنید</option>
               {consoles.map((c) => (
                 <option key={c.id} value={c.value}>
@@ -74,10 +88,9 @@ export default function H2HCreate() {
                 </option>
               ))}
             </select>
-          </div>
-          <div className="form-field">
-            <label>ورژن بازی</label>
-            <select value={form.game_version} onChange={(e) => setForm({ ...form, game_version: e.target.value })}>
+          </FormField>
+          <FormField label="ورژن بازی">
+            <select value={form.game_version} onChange={(e) => setForm({ ...form, game_version: e.target.value })} className={fieldClass}>
               <option value="">انتخاب کنید</option>
               {gameVersions.map((g) => (
                 <option key={g.id} value={g.value}>
@@ -85,47 +98,46 @@ export default function H2HCreate() {
                 </option>
               ))}
             </select>
-          </div>
-          <div className="form-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          </FormField>
+          <div className="mb-4 flex items-center gap-2">
             <input
               type="checkbox"
               id="is_private"
               checked={form.is_private}
               onChange={(e) => setForm({ ...form, is_private: e.target.checked })}
-              style={{ width: 'auto' }}
+              className="h-4 w-4 accent-gold"
             />
-            <label htmlFor="is_private" style={{ margin: 0 }}>
+            <label htmlFor="is_private" className="text-sm text-ink">
               مسابقه خصوصی (با رمز عبور)
             </label>
           </div>
           {form.is_private && (
-            <div className="form-field">
-              <label>رمز عبور مسابقه</label>
-              <input
-                type="text"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-              />
-            </div>
+            <FormField label="رمز عبور مسابقه">
+              <Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="rounded-md" />
+            </FormField>
           )}
-          <div className="form-field">
-            <label>فرجه زمانی برای ثبت نتیجه هر نیم‌فصل (ساعت)</label>
-            <input
+          <FormField
+            label="فرجه زمانی برای ثبت نتیجه هر نیم‌فصل (ساعت)"
+            hint="اگر تا پایان این مدت نتیجه ثبت نشود، طرف مقابل می‌تواند برد ۳-۰ را درخواست کند."
+          >
+            <Input
               type="number"
               min={1}
               value={form.time_limit_hours}
               onChange={(e) => setForm({ ...form, time_limit_hours: e.target.value })}
+              className="rounded-md"
             />
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', margin: '4px 0 0' }}>
-              اگر تا پایان این مدت نتیجه ثبت نشود، طرف مقابل می‌تواند برد ۳-۰ را درخواست کند.
+          </FormField>
+          {error && (
+            <p className="mb-4 flex items-center gap-1.5 text-sm text-critical">
+              <AlertCircle size={14} /> {error}
             </p>
-          </div>
-          {error && <p className="error-text">{error}</p>}
-          <button className="btn btn-primary" disabled={loading}>
+          )}
+          <Button type="submit" disabled={loading} className="w-full">
             {loading ? 'در حال ساخت...' : 'ساخت مسابقه'}
-          </button>
+          </Button>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }

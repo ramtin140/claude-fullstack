@@ -4,14 +4,16 @@ import { Trash2, Search } from 'lucide-react';
 import { api } from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { ROLE_LABELS } from '../../components/ProtectedRoute.jsx';
-import '../../styles/admin.css';
+import { Card } from '../../components/ui/card.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table.jsx';
 
-const roleBadge = {
-  senior_admin: 'badge-live',
-  writer: 'badge-waiting',
-  match_expert: 'badge-waiting',
-  member: 'badge-finished',
-};
+const roleVariant = { senior_admin: 'live', writer: 'waiting', match_expert: 'waiting', member: 'finished' };
+
+const selectClass =
+  'rounded-md border border-border bg-bg px-2.5 py-1.5 text-[13px] text-ink outline-none transition-colors focus-visible:border-gold disabled:opacity-50';
 
 export default function AdminUsers() {
   const { user: me } = useAuth();
@@ -42,62 +44,58 @@ export default function AdminUsers() {
 
   return (
     <div>
-      <div className="admin-header">
-        <h1>مدیریت کاربران</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-gold">مدیریت کاربران</h1>
       </div>
 
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginBottom: 18, maxWidth: 420 }}>
-        <input
+      <form onSubmit={handleSearch} className="mb-[18px] flex max-w-[420px] gap-2.5">
+        <Input
           placeholder="جستجو بر اساس نام، ایمیل یا fifa soul ID..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
+          className="flex-1 rounded-md"
         />
-        <button className="btn btn-primary" type="submit">
+        <Button type="submit" size="icon">
           <Search size={16} />
-        </button>
+        </Button>
       </form>
 
-      <div className="card" style={{ overflowX: 'auto' }}>
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>نام</th>
-              <th>ایمیل</th>
-              <th>fifa soul ID</th>
-              <th>نقش</th>
-              <th>امتیاز</th>
-              <th>عملیات</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Card className="overflow-hidden p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>نام</TableHead>
+              <TableHead>ایمیل</TableHead>
+              <TableHead>fifa soul ID</TableHead>
+              <TableHead>نقش</TableHead>
+              <TableHead>امتیاز</TableHead>
+              <TableHead>عملیات</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {users.map((u) => (
-              <tr key={u.id}>
-                <td>
-                  <Link to={`/u/${u.id}`}>{u.name}</Link>
-                  {u.is_guest ? ' 👤' : ''}
-                </td>
-                <td>{u.email}</td>
-                <td style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{u.fifa_soul_id}</td>
-                <td>
-                  <span className={`badge ${roleBadge[u.role] || 'badge-finished'}`}>
-                    {ROLE_LABELS[u.role] || u.role}
-                  </span>
-                </td>
-                <td>{u.points}</td>
-                <td>
-                  <div className="row-actions">
+              <TableRow key={u.id}>
+                <TableCell>
+                  <Link to={`/u/${u.id}`} className="text-gold hover:underline">
+                    {u.name}
+                  </Link>
+                  {u.is_guest ? ' \u{1F464}' : ''}
+                </TableCell>
+                <TableCell>{u.email}</TableCell>
+                <TableCell className="font-mono text-xs" dir="ltr">
+                  {u.fifa_soul_id}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={roleVariant[u.role] || 'finished'}>{ROLE_LABELS[u.role] || u.role}</Badge>
+                </TableCell>
+                <TableCell>{u.points}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
                     <select
                       value={u.role}
                       disabled={u.id === me.id}
                       onChange={(e) => changeRole(u, e.target.value)}
-                      style={{
-                        padding: '6px 10px',
-                        borderRadius: 8,
-                        background: 'var(--bg-darker)',
-                        color: 'var(--text-light)',
-                        border: '1px solid var(--border-soft)',
-                      }}
+                      className={selectClass}
                     >
                       {Object.entries(ROLE_LABELS).map(([value, label]) => (
                         <option key={value} value={value}>
@@ -106,17 +104,17 @@ export default function AdminUsers() {
                       ))}
                     </select>
                     {u.id !== me.id && (
-                      <button className="icon-btn" onClick={() => handleDelete(u.id)}>
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDelete(u.id)}>
                         <Trash2 size={15} />
-                      </button>
+                      </Button>
                     )}
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }

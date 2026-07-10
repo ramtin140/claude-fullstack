@@ -1,10 +1,27 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, Power } from 'lucide-react';
 import { api } from '../../api/client.js';
-import '../../styles/admin.css';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table.jsx';
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from '../../components/ui/dialog.jsx';
 
 const categoryLabel = { console: 'کنسول', game_version: 'ورژن بازی' };
 const emptyForm = { category: 'console', value: '', label: '', sort_order: 0 };
+
+const fieldClass =
+  'w-full rounded-md border border-border bg-bg px-3.5 py-2.5 text-sm text-ink outline-none transition-colors focus-visible:border-gold';
+
+function FormField({ label, children }) {
+  return (
+    <div className="mb-3.5 flex flex-col gap-1.5">
+      <label className="text-[13px] text-ink-muted">{label}</label>
+      {children}
+    </div>
+  );
+}
 
 export default function AdminGameOptions() {
   const [options, setOptions] = useState([]);
@@ -44,87 +61,78 @@ export default function AdminGameOptions() {
 
   return (
     <div>
-      <div className="admin-header">
-        <h1>مدیریت گزینه‌های بازی</h1>
-        <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-gold">مدیریت گزینه‌های بازی</h1>
+        <Button onClick={() => setModalOpen(true)}>
           <Plus size={16} /> گزینه جدید
-        </button>
+        </Button>
       </div>
-      <p style={{ color: 'var(--text-muted)', marginTop: -12, marginBottom: 20, fontSize: '0.85rem' }}>
+      <p className="mb-5 text-[13px] text-ink-muted">
         این گزینه‌ها در فرم ساخت مسابقات (کنسول، ورژن بازی) نمایش داده می‌شوند و بدون نیاز به تغییر کد قابل افزودن/حذف‌اند.
       </p>
 
-      <div className="card" style={{ overflowX: 'auto' }}>
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>دسته</th>
-              <th>مقدار</th>
-              <th>برچسب</th>
-              <th>وضعیت</th>
-              <th>عملیات</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Card className="overflow-hidden p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>دسته</TableHead>
+              <TableHead>مقدار</TableHead>
+              <TableHead>برچسب</TableHead>
+              <TableHead>وضعیت</TableHead>
+              <TableHead>عملیات</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {options.map((o) => (
-              <tr key={o.id}>
-                <td>{categoryLabel[o.category] || o.category}</td>
-                <td>{o.value}</td>
-                <td>{o.label}</td>
-                <td>
-                  <span className={`badge ${o.is_active ? 'badge-live' : 'badge-finished'}`}>
-                    {o.is_active ? 'فعال' : 'غیرفعال'}
-                  </span>
-                </td>
-                <td>
-                  <div className="row-actions">
-                    <button className="icon-btn" onClick={() => toggleActive(o)} title="فعال/غیرفعال">
+              <TableRow key={o.id}>
+                <TableCell>{categoryLabel[o.category] || o.category}</TableCell>
+                <TableCell>{o.value}</TableCell>
+                <TableCell>{o.label}</TableCell>
+                <TableCell>
+                  <Badge variant={o.is_active ? 'live' : 'finished'}>{o.is_active ? 'فعال' : 'غیرفعال'}</Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => toggleActive(o)} title="فعال/غیرفعال">
                       <Power size={15} />
-                    </button>
-                    <button className="icon-btn" onClick={() => handleDelete(o.id)}>
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDelete(o.id)}>
                       <Trash2 size={15} />
-                    </button>
+                    </Button>
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
 
-      {modalOpen && (
-        <div className="modal-overlay" onClick={() => setModalOpen(false)}>
-          <div className="card modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2>گزینه جدید</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="form-field">
-                <label>دسته</label>
-                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-                  <option value="console">کنسول</option>
-                  <option value="game_version">ورژن بازی</option>
-                </select>
-              </div>
-              <div className="form-field">
-                <label>مقدار (کد داخلی، مثلاً ps5)</label>
-                <input required value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} />
-              </div>
-              <div className="form-field">
-                <label>برچسب نمایشی (مثلاً PlayStation 5)</label>
-                <input required value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} />
-              </div>
-              {error && <p className="error-text">{error}</p>}
-              <div className="modal-actions">
-                <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>
-                  انصراف
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  ذخیره
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogTitle>گزینه جدید</DialogTitle>
+          <form onSubmit={handleSubmit}>
+            <FormField label="دسته">
+              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={fieldClass}>
+                <option value="console">کنسول</option>
+                <option value="game_version">ورژن بازی</option>
+              </select>
+            </FormField>
+            <FormField label="مقدار (کد داخلی، مثلاً ps5)">
+              <Input required value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} className="rounded-md" />
+            </FormField>
+            <FormField label="برچسب نمایشی (مثلاً PlayStation 5)">
+              <Input required value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} className="rounded-md" />
+            </FormField>
+            {error && <p className="mb-3.5 text-sm text-critical">{error}</p>}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
+                انصراف
+              </Button>
+              <Button type="submit">ذخیره</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

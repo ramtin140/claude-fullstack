@@ -2,7 +2,21 @@ import { useEffect, useState } from 'react';
 import { Coins, TrendingUp, Swords } from 'lucide-react';
 import { api } from '../../api/client.js';
 import { formatDateTime } from '../../utils/datetime.js';
-import '../../styles/admin.css';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table.jsx';
+
+function Kpi({ icon: Icon, value, label }) {
+  return (
+    <Card className="p-5 text-center">
+      <Icon className="mx-auto mb-1.5 text-gold" size={20} />
+      <div className="text-[1.7rem] font-extrabold tabular-nums text-gold">{value}</div>
+      <div className="mt-1 text-sm text-ink-muted">{label}</div>
+    </Card>
+  );
+}
 
 export default function AdminRevenue() {
   const [data, setData] = useState(null);
@@ -31,87 +45,67 @@ export default function AdminRevenue() {
     }
   }
 
-  if (!data) return <div className="empty-state" style={{ padding: 60 }}>در حال بارگذاری...</div>;
+  if (!data) return <div className="flex justify-center py-16 text-ink-faint">در حال بارگذاری...</div>;
 
   return (
     <div>
-      <div className="admin-header">
-        <h1>درآمد و بازی‌ها</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-gold">درآمد و بازی‌ها</h1>
       </div>
 
-      <div className="admin-kpis">
-        <div className="card admin-kpi">
-          <Coins color="var(--gold)" />
-          <div className="value">{data.total_revenue.toLocaleString('fa-IR')}</div>
-          <div className="label">مجموع کارمزد (تیکت)</div>
-        </div>
-        <div className="card admin-kpi">
-          <TrendingUp color="var(--gold)" />
-          <div className="value">{data.total_pot.toLocaleString('fa-IR')}</div>
-          <div className="label">مجموع مبلغ در گردش (تیکت)</div>
-        </div>
-        <div className="card admin-kpi">
-          <Swords color="var(--gold)" />
-          <div className="value">{data.decided_matches.toLocaleString('fa-IR')}</div>
-          <div className="label">مسابقات دارای برنده</div>
-        </div>
+      <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-[18px]">
+        <Kpi icon={Coins} value={data.total_revenue.toLocaleString('fa-IR')} label="مجموع کارمزد (تیکت)" />
+        <Kpi icon={TrendingUp} value={data.total_pot.toLocaleString('fa-IR')} label="مجموع مبلغ در گردش (تیکت)" />
+        <Kpi icon={Swords} value={data.decided_matches.toLocaleString('fa-IR')} label="مسابقات دارای برنده" />
       </div>
 
-      <div className="card" style={{ padding: 20, marginBottom: 24, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={{ color: 'var(--text-muted)' }}>
-          کارمزد سایت از هر مسابقه (٪ از مجموع مبلغ دو طرف، معادل نیمی از این عدد از هر بازیکن):
-        </span>
-        <input
+      <Card className="mb-6 flex flex-wrap items-center gap-2.5 p-5">
+        <span className="text-ink-muted">کارمزد سایت از هر مسابقه (٪ از مجموع مبلغ دو طرف، معادل نیمی از این عدد از هر بازیکن):</span>
+        <Input
           type="number"
           min={0}
           max={100}
           step="0.1"
           value={feePercent}
           onChange={(e) => setFeePercent(e.target.value)}
-          style={{ width: 100, padding: 10, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--bg-darker)', color: 'var(--text-light)' }}
+          className="w-[100px] rounded-md"
         />
-        <button className="btn btn-primary" onClick={saveFeePercent}>
-          ذخیره
-        </button>
-      </div>
-      {message && <p className="success-text">{message}</p>}
-      {error && <p className="error-text">{error}</p>}
+        <Button onClick={saveFeePercent}>ذخیره</Button>
+      </Card>
+      {message && <p className="mb-4 text-sm text-success">{message}</p>}
+      {error && <p className="mb-4 text-sm text-critical">{error}</p>}
 
       {data.matches.length === 0 ? (
-        <div className="empty-state">هنوز مسابقه‌ای با برنده ثبت نشده است.</div>
+        <div className="rounded-md border border-dashed border-border py-16 text-center text-sm text-ink-faint">هنوز مسابقه‌ای با برنده ثبت نشده است.</div>
       ) : (
-        <div className="card" style={{ overflowX: 'auto' }}>
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>بازیکنان</th>
-                <th>برنده</th>
-                <th>استیک هر نفر</th>
-                <th>کارمزد سایت</th>
-                <th>تاریخ پایان</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Card className="overflow-hidden p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>بازیکنان</TableHead>
+                <TableHead>برنده</TableHead>
+                <TableHead>استیک هر نفر</TableHead>
+                <TableHead>کارمزد سایت</TableHead>
+                <TableHead>تاریخ پایان</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {data.matches.map((m) => (
-                <tr key={m.id}>
-                  <td>
+                <TableRow key={m.id}>
+                  <TableCell>
                     {m.creator_name} vs {m.opponent_name || '؟'}
-                  </td>
-                  <td style={{ color: 'var(--gold)' }}>{m.winner_name}</td>
-                  <td>{m.stake_amount}</td>
-                  <td>
-                    {m.platform_fee_amount === null ? (
-                      <span className="badge badge-finished">بدون کارمزد (قدیمی)</span>
-                    ) : (
-                      `${m.platform_fee_amount} تیکت`
-                    )}
-                  </td>
-                  <td>{formatDateTime(m.completed_at)}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="text-gold">{m.winner_name}</TableCell>
+                  <TableCell>{m.stake_amount}</TableCell>
+                  <TableCell>
+                    {m.platform_fee_amount === null ? <Badge variant="finished">بدون کارمزد (قدیمی)</Badge> : `${m.platform_fee_amount} تیکت`}
+                  </TableCell>
+                  <TableCell>{formatDateTime(m.completed_at)}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );
